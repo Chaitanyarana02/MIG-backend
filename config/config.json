@@ -1,9 +1,9 @@
 {
   "development": {
-    "username": "root",
-    "password": null,
-    "database": "mig-hi",
-    "host": "127.0.0.1",
+    "username": "admin",
+    "password": "FrMjlDZaf688Q5Bjbu7A",
+    "database": "mig_hi",
+    "host": "database-1.cfykoi4oety6.us-east-2.rds.amazonaws.com",
     "dialect": "mysql"
   }
 }

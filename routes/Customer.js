@@ -20,6 +20,10 @@ router.get('/get-customers', authMiddleware,CustomerController.get);
 router.get("/get-customers-details",
   authMiddleware,
   CustomerController.get_customer_details);
+
+
+
+  
 router.post('/customers-edit-profile',upload.fields([
     { name: 'CivilWarCertificate', maxCount: 1 },
     { name: 'IdentitybackCertificate', maxCount: 1 },

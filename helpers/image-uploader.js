@@ -9,7 +9,7 @@ const storage = multer.diskStorage({
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         const extension = file.originalname.split('.')[1]; // Extract the file extension
         // console.log(extension);
-        cb(null, file.fieldname + '-' + uniqueSuffix + '.' + extension);
+        cb(null, file.fieldname + '-' + uniqueSuffix);
     }
 });
 

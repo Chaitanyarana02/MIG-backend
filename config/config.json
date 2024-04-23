@@ -1,5 +1,14 @@
+
 {
   "development": {
+    "username": "root",
+    "password": null,
+    "database": "mig-hi",
+    "host": "127.0.0.1",
+    "dialect": "mysql"
+  },
+
+  "production": {
     "username": "admin",
     "password": "FrMjlDZaf688Q5Bjbu7A",
     "database": "mig_hi",

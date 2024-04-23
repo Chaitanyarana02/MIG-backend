@@ -1,4 +1,4 @@
-const { User } = require('../models');
+const { User, Customer } = require('../models');
 const { validationResult } = require('express-validator');
 const jwt = require('jsonwebtoken');
 const otpGenerator = require('otp-generator');
@@ -90,14 +90,54 @@ async function login(req, res) {
   }
 };
 
+async function currentuser(req, res) {
+  try {
+    const currentUser = req.user;
+    if (!currentUser || currentUser.userType !== '0') {
+        return res.status(401).json({ 
+            status: 'false',
+            statusCode: 401,
+            message: 'You don`t have permission to access' });
+    }
+    const phoneNo = req.user.phoneNo;
+    const customer = await Customer.findOne({ where: { PhoneNo: phoneNo } });
+
+    if (!customer) {
+      return res.status(404).json({ 
+        status: 'false',
+        statusCode: 404,
+        message: 'Customer not found' });
+    }
+
+    res.json({ 
+      customer: customer, 
+      user: req.user,
+      status: 'true',
+      statusCode: 200,
+      message: 'Customer Found Successfully' });
+  } catch (error) {
+    console.error('Error occurred while fetching current user:', error);
+    res.status(500).json({
+      status: 'false',
+      statusCode: 500,
+      message: 'Internal server error'
+    });
+  }
+}
+
 async function logout(req, res) {
     res.clearCookie('token');
     res.status(200).json({ message: 'Logged out successfully' });
 }
+
+
+
+
   
   module.exports = {
     // store,
     login,
     otpverify,
-    logout
+    logout,
+    currentuser
   };

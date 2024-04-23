@@ -7,6 +7,7 @@ const router= express.Router();
 
 
 router.post('/customer-login',upload.none(), UserController.login);
+router.get('/current-customer',authMiddleware, UserController.currentuser);
 router.post('/otp-verify', upload.none(),UserController.otpverify);
 router.post('/logout', authMiddleware,UserController.logout);
 

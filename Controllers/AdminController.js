@@ -107,9 +107,49 @@ async function editadmin(req, res) {
 }
 
 
+async function showadmin(req, res) {
+    try {
+        
+        const currentUser = req.user;
+        if (!currentUser || currentUser.userType !== '1') {
+            return res.status(401).json({ 
+                status: 'false',
+                statusCode: 401,
+                message: 'You don`t have permission to access' });
+        }
+
+        const adminId = req.params.id;
+
+        const admin = await Admin.findByPk(adminId);
+
+        if (!admin) {
+            return res.status(404).json({
+                status: 'false',
+                statusCode: 404,
+                message: 'Admin not found'
+            });
+        }
+        res.status(200).json({
+            data: admin,
+            status: 'true',
+            statusCode: 200,
+            message: 'Admin get Successfully'
+        });
+    } catch (error) {
+        console.error('Error fetching admin:', error);
+        res.status(500).json({
+            status: 'false',
+            statusCode: 500,
+            message: 'Internal server error'
+        });
+    }
+}
+
+
 
 module.exports = { 
     store,
     getadmins,
-    editadmin
+    editadmin,
+    showadmin
 };

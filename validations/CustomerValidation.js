@@ -1,9 +1,17 @@
 const { body } = require('express-validator');
-const { Customer } = require('../models');
+const { Customer, User } = require('../models');
 
 const CustomerValidation = [
-  body('FirstName').exists().withMessage('First Name is required'),
-  body('LastName').exists().withMessage('Last name is required'),
+  body('FirstName').exists().withMessage('First Name is required')
+  .bail()
+  .isAlpha().withMessage('First Name must contain only alphabetic characters')
+  .isUppercase().withMessage('First Name must be capitalized'),
+
+  body('LastName').exists().withMessage('Last name is required')
+  .bail()
+  .isAlpha().withMessage('Last Name must contain only alphabetic characters')
+  .isUppercase().withMessage('Last Name must be capitalized'),
+
   body('PhoneNo').exists().withMessage('Phone number is required')
       .bail()
       .isNumeric().withMessage('Phone number must be numeric')
@@ -13,8 +21,13 @@ const CustomerValidation = [
           if (customer) {
               throw new Error('Phone number is already taken');
           }
+          const user = await User.findOne({ where: { phoneNo: value } });
+            if (user) {
+                throw new Error('Phone number is already taken');
+            }
           return true;
       }),
+
       body('RegisterNo').exists().withMessage('Register number is required')
       .bail()
       .custom(async (value, { req }) => {

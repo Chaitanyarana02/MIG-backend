@@ -4,11 +4,12 @@ const { getNewUserData  } = require('../Response/CustomerResponse.js');
 const { paginate } = require('../Response/Pagination');
 const xlsx = require('xlsx');
 const upload = require('../helpers/image-uploader');
-// const baseUrl = "http://localhost:3011/uploads/";
 const bodyParser = require('body-parser');
 const AWS = require('aws-sdk');
 require('dotenv').config();
 const fs = require('fs');
+const { Op } = require('sequelize');
+
 AWS.config.update({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
@@ -21,7 +22,7 @@ const s3 = new AWS.S3();
 async function store(req, res) {
     try {
         const currentUser = req.user;
-        if (!currentUser || currentUser.userType !== '1') {
+        if (!currentUser || currentUser.userType == '0') {
             return res.status(401).json({ 
                 status: 'false',
                 statusCode: 401,
@@ -118,7 +119,7 @@ async function uploadToS3(file) {
 async function get(req, res) {
     try {
         const currentUser = req.user;
-        if (!currentUser || currentUser.userType !== '1') {
+        if (!currentUser || currentUser.userType == '0') {
             return res.status(401).json({ 
                 status: 'false',
                 statusCode: 401,
@@ -128,11 +129,22 @@ async function get(req, res) {
         const page = req.query.page || 1; 
         const perPage = req.query.perPage ? parseInt(req.query.perPage) : 15;
         const offset = (page - 1) * perPage;
-
+        let whereCondition = {};
+        if (req.query.PhoneNo || req.query.FirstName || req.query.LastName || req.query.RegisterNo) {
+            whereCondition = {
+                ...(req.query.FirstName && { FirstName: { [Op.like]: `%${req.query.FirstName}%` } }),
+                ...(req.query.LastName && { LastName: { [Op.like]: `%${req.query.LastName}%` } }),
+                ...(req.query.RegisterNo && { RegisterNo: { [Op.like]: `%${req.query.RegisterNo}%` } }),
+                ...(req.query.PhoneNo && { PhoneNo: { [Op.like]: `%${req.query.PhoneNo}%` } }),
+            };
+        }    
+        const order = req.query.order === 'desc' ? 'DESC' : 'ASC';
         const { count, rows: customers } = await Customer.findAndCountAll({
             where: {
-                UserId: userId
+                UserId: userId,
+                ...whereCondition
             },
+            order: [['createdAt', order]], // Example: Order by createdAt column
             limit: perPage,
             offset: offset
         });
@@ -202,7 +214,7 @@ async function get_customer_details(req, res) {
 async function storeExcel(req, res) {
     try {
         const currentUser = req.user;
-        if (!currentUser || currentUser.userType !== '1') {
+        if (!currentUser || currentUser.userType == '0') {
             return res.status(401).json({ 
                 status: 'false',
                 statusCode: 401,

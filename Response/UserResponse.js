@@ -4,6 +4,8 @@ const getNewUserData = (user) =>  {
     userTypeText = 'Customer';
   } else if (user.userType === "1") {
     userTypeText = 'Manager';
+  } else if (user.userType === "2") {
+    userTypeText = 'SuperAdmin';
   }
   
   return {

@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const otpGenerator = require('otp-generator');
 const bcrypt = require('bcrypt');
 const { getNewUserData } = require('../Response/UserResponse.js');
+const axios = require('axios');
 
 
 
@@ -125,6 +126,84 @@ async function currentuser(req, res) {
   }
 }
 
+async function guranteelist(req, res) {
+  try {
+    // const BASES_URL= '202.131.231.212';
+    const { RegisterNo } = req.query;
+    const BASE_URL = 'http://202.131.231.212:93/api/Guarantee/List';
+    const apiKey = 'HABBVtrHLF3YV';
+    const response = await axios.get(BASE_URL, {
+      params: { RegisterNo },
+      headers: {
+        'APIkey': apiKey
+      }
+    });
+
+    const responseData = response.data;
+    res.json(responseData);
+} catch (error) {
+    console.error('Error occurred while calling external API:', error);
+    res.status(500).json({
+        status: 'false',
+        statusCode: 500,
+        message: 'Internal server error'
+    });
+}
+}
+async function quitsList(req, res) {
+  try {
+    const { SearchTypeId, SearchValue } = req.query;
+    const BASE_URL = 'http://202.131.231.212:93/api/Quits/List';
+    const apiKey = 'HABBVtrHLF3YV';
+    const response = await axios.get(BASE_URL, {
+      params: { SearchTypeId, SearchValue },
+      headers: {
+        'APIkey': apiKey
+      }
+    });
+
+    // Process the response here
+    const responseData = response.data;
+
+    // Return the responseData
+    res.json(responseData);
+  } catch (error) {
+    console.error('Error occurred while calling external API:', error);
+    res.status(500).json({
+      status: 'false',
+      statusCode: 500,
+      message: 'Internal server error'
+    });
+  }
+}
+
+async function quitsdelete(req, res) {
+  try {
+
+    const { f1 } = req.query;
+    const BASE_URL = 'http://202.131.231.212:93/api/Quits/Delete';
+    const apiKey = 'HABBVtrHLF3YV';
+    const response = await axios.get(BASE_URL, {
+      params: { f1 },
+      headers: {
+        'APIkey': apiKey
+      }
+    });
+
+    const responseData = response.data;
+    res.json(responseData);
+} catch (error) {
+    console.error('Error occurred while calling external API:', error);
+    res.status(500).json({
+        status: 'false',
+        statusCode: 500,
+        message: 'Internal server error'
+    });
+}
+}
+
+
+
 async function logout(req, res) {
     res.clearCookie('token');
     res.status(200).json({ message: 'Logged out successfully' });
@@ -139,5 +218,9 @@ async function logout(req, res) {
     login,
     otpverify,
     logout,
-    currentuser
+    currentuser,
+    guranteelist,
+    quitsList,
+    quitsdelete
+
   };

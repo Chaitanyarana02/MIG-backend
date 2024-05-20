@@ -11,7 +11,8 @@ router.get('/current-customer',authMiddleware, UserController.currentuser);
 router.post('/otp-verify', upload.none(),UserController.otpverify);
 router.get('/Guarantee/List', upload.none(),UserController.guranteelist);
 router.get('/Quits/List', upload.none(),UserController.quitsList);
-router.get('/Quits/Delete', upload.none(),UserController.quitsdelete);
+router.post('/Quits/Delete', upload.none(),UserController.quitsdelete);
+router.post('/Quits/Insert',upload.none(),UserController.sendclaim);
 router.post('/logout', authMiddleware,UserController.logout);
 
 module.exports = router;

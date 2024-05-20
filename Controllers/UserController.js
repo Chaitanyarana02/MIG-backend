@@ -27,11 +27,18 @@ async function login(req, res) {
 
         const generatedOtp = Math.floor(100000 + Math.random() * 900000);
         user.otp = generatedOtp;
-        await user.save(); 
+        await user.save();
+        
+        
+        const server_otp_status = await sendServerOtp(phoneNo) ; 
+        const sms_services_use = await checkMobileNetwork(phoneNo) ; 
+         
         const responseData = getNewUserData(user);
 
       res.status(200).json({
             data:responseData,
+            serverOTPsendStatus:server_otp_status ,
+            smsService:sms_services_use ,
             status: 'true',
             statusCode: 200,
             message: 'OTP sent successfully'
@@ -46,6 +53,61 @@ async function login(req, res) {
     }
 }
 
+
+function checkMobileNetwork(phoneNo) {
+  const firstTwoDigits = phoneNo.substring(0, 2);
+
+  switch (firstTwoDigits) {
+      case '99':
+      case '95':
+      case '94':
+      case '85':
+          return 'MOBICOM';
+      case '91':
+      case '90':
+      case '96':
+          return 'SKYTEL';
+      case '88':
+      case '89':
+      case '86':
+      case '80':
+          return 'UNITEL';
+      case '93':
+      case '98':
+      case '97':
+          return 'GMOBILE';
+      default:
+          return 'Unknown';
+  }
+}
+
+async function sendServerOtp(phoneNo) {
+
+  const network_type = checkMobileNetwork(phoneNo);
+
+  function getNetworkTypeAccordingSMSAPi(network_type, phoneNo) {
+      switch (network_type) {
+          case 'MOBICOM':
+              return `http://27.123.214.168/smsmt/mt?servicename=mig&username=daatgal&from=136000&to=${phoneNo}&msg=test`;
+          case 'SKYTEL':
+              return `http://smsgw.skytel.mn/SMSGW-war/pushsms?id=1000076&src=136000&dest=${phoneNo}&text=turshilt`;
+          case 'UNITEL':
+              return `https://sms.unitel.mn/sendSMS.php?uname=mig&upass=Unitel88&sms=test&from=136000&mobile=${phoneNo}`;
+          case 'GMOBILE':
+              return `https://smstusgai.gmobile.mn/cgi-bin/sendsms?username=mig_daatgal&password=daatgal*136&from=136000&to=${phoneNo}&text=message`;
+      }
+  }
+
+    const apiUrl = getNetworkTypeAccordingSMSAPi(network_type, phoneNo); // Corrected calling of the function
+    apiRespons = null ;
+    try {
+        const res = await axios.post(apiUrl); // Use await to wait for the axios response
+        apiRespons =  res.data;
+    } catch (error) {
+        console.error("Error sending SMS: ", error);
+    }
+    return apiRespons;
+}
 
   async function otpverify(req, res) {
     try {
@@ -180,11 +242,12 @@ async function quitsList(req, res) {
 async function quitsdelete(req, res) {
   try {
 
-    const { f1 } = req.query;
+    const { f1 } = req.body;
     const BASE_URL = 'http://202.131.231.212:93/api/Quits/Delete';
     const apiKey = 'HABBVtrHLF3YV';
-    const response = await axios.get(BASE_URL, {
-      params: { f1 },
+    const response = await axios.post(BASE_URL, {
+      f1: f1
+    }, {
       headers: {
         'APIkey': apiKey
       }
@@ -200,6 +263,59 @@ async function quitsdelete(req, res) {
         message: 'Internal server error'
     });
 }
+}
+
+async function sendclaim(req, res) {
+  try {
+    const {
+      f1,
+      f2,
+      f3,
+      f4,
+      f5,
+      f6,
+      f7,
+      f8,
+      f9,
+      f10,
+      f11,
+      f12,
+      f13
+    } = req.body;
+    const BASE_URL = 'http://202.131.231.212:93/api/Quits/Insert';
+    const apiKey = 'HABBVtrHLF3YV';
+
+    const response = await axios.post(BASE_URL, {
+      f1,
+      f2,
+      f3,
+      f4,
+      f5,
+      f6,
+      f7,
+      f8,
+      f9,
+      f10,
+      f11,
+      f12,
+      f13
+    }, {
+      headers: {
+        'APIkey': apiKey
+      },
+      timeout: 5000
+    });
+
+    const responseData = response.data;
+    res.json(responseData);
+  } catch (error) {
+    console.error('Error occurred while calling external API:', error);
+    res.status(500).json({
+      status: 'false',
+      statusCode: 500,
+      message: 'Internal server error'
+    });
+  }
 }
 
 
@@ -221,6 +337,7 @@ async function logout(req, res) {
     currentuser,
     guranteelist,
     quitsList,
-    quitsdelete
+    quitsdelete,
+    sendclaim
 
   };

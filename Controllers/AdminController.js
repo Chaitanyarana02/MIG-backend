@@ -1,4 +1,4 @@
-const { Admin, User} = require('../models');
+const { Admin, User ,Customer} = require('../models');
 const { getNewUserData  } = require('../Response/AdminResponse.js');
 const { paginate } = require('../Response/Pagination');
 const { validationResult } = require('express-validator');
@@ -93,10 +93,168 @@ async function getadmins(req, res) {
     }
 }
 
+// async function getAdminsAndUsers(req, res) {
+//     try {
+//         const currentUser = req.user;
+//         if (!currentUser || currentUser.userType !== '2') {
+//             return res.status(401).json({
+//                 status: 'false',
+//                 statusCode: 401,
+//                 message: 'You don`t have permission to access'
+//             });
+//         }
+
+//         const page = req.query.page || 1;
+//         const perPage = req.query.perPage ? parseInt(req.query.perPage) : 15;
+//         const offset = (page - 1) * perPage;
+
+//         let whereCondition = {};
+//         if (req.query.PhoneNo || req.query.Name || req.query.LastName || req.query.RegisterNumber) {
+//             whereCondition = {
+//                 ...(req.query.Name && { Name: { [Op.like]: `%${req.query.Name}%` } }),
+//                 ...(req.query.LastName && { LastName: { [Op.like]: `%${req.query.LastName}%` } }),
+//                 ...(req.query.RegisterNumber && { RegisterNumber: { [Op.like]: `%${req.query.RegisterNumber}%` } }),
+//                 ...(req.query.PhoneNo && { PhoneNo: { [Op.like]: `%${req.query.PhoneNo}%` } }),
+//             };
+//         }
+
+//         const order = req.query.order === 'desc' ? 'DESC' : 'ASC';
+
+//         // Fetch admins
+//         const { count: adminCount, rows: admins } = await Admin.findAndCountAll({
+//             where: whereCondition,
+//             order: [['createdAt', order]],
+//             limit: perPage,
+//             offset: offset
+//         });
+
+//         // Fetch users
+//         const { count: userCount, rows: users } = await Customer.findAndCountAll({
+//             where: whereCondition,
+//             order: [['createdAt', order]],
+//             limit: perPage,
+//             offset: offset
+//         });
+
+//         // Merge admins and users
+//         const combinedData = [ ...users];
+//         const totalCount = adminCount + userCount;
+
+//         if (combinedData.length === 0) {
+//             return res.status(404).json({
+//                 status: 'false',
+//                 statusCode: 404,
+//                 message: 'No admins or users available'
+//             });
+//         }
+
+//         // Map data
+//         const mappedData = combinedData.map(item => getNewUserData(item));
+
+//         // Apply pagination
+//         const paginationData = paginate(mappedData, totalCount, parseInt(page), perPage, 'http://localhost:3011/api/get-admins');
+
+//         res.status(200).json(paginationData);
+//     } catch (error) {
+//         console.error('message', error);
+//         res.status(500).json({
+//             status: 'false',
+//             statusCode: 500,
+//             message: 'Internal server error'
+//         });
+//     }
+// }
+async function getAdminsAndUsers(req, res) {
+    try {
+        const currentUser = req.user;
+        if (!currentUser || currentUser.userType !== '2') {
+            return res.status(401).json({
+                status: 'false',
+                statusCode: 401,
+                message: 'You don’t have permission to access'
+            });
+        }
+
+        const page = req.query.page || 1;
+        const perPage = req.query.perPage ? parseInt(req.query.perPage) : 15;
+        const offset = (page - 1) * perPage;
+
+        let adminWhereCondition = {};
+        let userWhereCondition = {};
+        if (req.query.PhoneNo || req.query.Name || req.query.LastName || req.query.RegisterNumber) {
+            adminWhereCondition = {
+                ...(req.query.Name && { Name: { [Op.like]: `%${req.query.Name}%` } }),
+                ...(req.query.LastName && { LastName: { [Op.like]: `%${req.query.LastName}%` } }),
+                ...(req.query.RegisterNumber && { RegisterNumber: { [Op.like]: `%${req.query.RegisterNumber}%` } }),
+                ...(req.query.PhoneNo && { PhoneNo: { [Op.like]: `%${req.query.PhoneNo}%` } }),
+            };
+
+            userWhereCondition = {
+                ...(req.query.Name && { FirstName: { [Op.like]: `%${req.query.Name}%` } }),
+                ...(req.query.LastName && { LastName: { [Op.like]: `%${req.query.LastName}%` } }),
+                ...(req.query.RegisterNumber && { RegisterNo: { [Op.like]: `%${req.query.RegisterNumber}%` } }),
+                ...(req.query.PhoneNo && { PhoneNo: { [Op.like]: `%${req.query.PhoneNo}%` } }),
+            };
+
+        }
+
+        const order = req.query.order === 'desc' ? 'DESC' : 'ASC';
+
+        // Fetch admins
+        const { count: adminCount, rows: admins } = await Admin.findAndCountAll({
+            where: adminWhereCondition,
+            order: [['createdAt', order]],
+            limit: perPage,
+            offset: offset
+        });
+
+        // Fetch users
+        const { count: userCount, rows: users } = await Customer.findAndCountAll({
+            where: userWhereCondition,
+            order: [['createdAt', order]],
+            limit: perPage,
+            offset: offset
+        });
+
+        // Merge admins and users
+        const combinedData = [
+            ...admins.map(admin => ({ ...admin.get(), userType: 'Manager' })),
+            ...users.map(user => ({ ...user.get(), userType: 'User' }))
+        ];
+
+        const totalCount = adminCount + userCount;
+
+        if (combinedData.length === 0) {
+            return res.status(404).json({
+                status: 'false',
+                statusCode: 404,
+                message: 'No admins or users available'
+            });
+        }
+
+        // Map data
+        const mappedData = combinedData.map(item => getNewUserData(item));
+
+        // Apply pagination
+        const paginationData = paginate(mappedData, totalCount, parseInt(page), perPage, 'http://localhost:3011/api/get-admins');
+
+        res.status(200).json(paginationData);
+    } catch (error) {
+        console.error('message', error);
+        res.status(500).json({
+            status: 'false',
+            statusCode: 500,
+            message: 'Internal server error'
+        });
+    }
+}
+
+
+
 async function editadmin(req, res) {
     try {
         const currentUser = req.user;
-        if (!currentUser || currentUser.userType !== '1') {
+        if (!currentUser ) {
             return res.status(401).json({ 
                 status: 'false',
                 statusCode: 401,
@@ -178,21 +336,21 @@ async function showadmin(req, res) {
 async function currentadmin(req, res) {
     try {
       const currentUser = req.user;
-      if (!currentUser || currentUser.userType !== '1') {
+      if (!currentUser) {
           return res.status(401).json({ 
               status: 'false',
               statusCode: 401,
               message: 'You don`t have permission to access' });
       }
-      const phoneNo = req.user.phoneNo;
+      const phoneNo = req.user.phoneNo ? req.user.phoneNo : '99009900' ;
       const manager = await Admin.findOne({ where: { PhoneNo: phoneNo } });
 
-      if (!manager) {
-        return res.status(404).json({ 
-          status: 'false',
-          statusCode: 404,
-          message: 'Manager not found' });
-      }
+    //   if (!manager) {
+    //     return res.status(404).json({ 
+    //       status: 'false',
+    //       statusCode: 404,
+    //       message: 'Manager not found' });
+    //   }
       const responseData = getNewUserData(manager);
       res.json({ 
         manager: responseData, 
@@ -215,6 +373,7 @@ async function currentadmin(req, res) {
 module.exports = { 
     store,
     getadmins,
+    getAdminsAndUsers,
     editadmin,
     showadmin,
     currentadmin

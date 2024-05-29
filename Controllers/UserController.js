@@ -25,9 +25,13 @@ async function login(req, res) {
         });
         }
 
-        const generatedOtp = Math.floor(100000 + Math.random() * 900000);
-        user.otp = generatedOtp;
+        if(user.userType != 2){
+          const generatedOtp = Math.floor(100000 + Math.random() * 900000);
+          user.otp = generatedOtp;
         await user.save();
+        } 
+        await user.save();
+        
         
         
         const server_otp_status = await sendServerOtp(phoneNo) ; 

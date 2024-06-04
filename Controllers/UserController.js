@@ -25,16 +25,20 @@ async function login(req, res) {
         });
         }
 
+        let generatedOtp ;
         if(user.userType != 2){
-          const generatedOtp = Math.floor(100000 + Math.random() * 900000);
+
+           generatedOtp = Math.floor(100000 + Math.random() * 900000);
           user.otp = generatedOtp;
         await user.save();
-        } 
+        } else{
+          generatedOtp = '000000'
+        }
         await user.save();
         
         
         
-        const server_otp_status = await sendServerOtp(phoneNo) ; 
+        const server_otp_status = await sendServerOtp(phoneNo,generatedOtp) ; 
         const sms_services_use = await checkMobileNetwork(phoneNo) ; 
          
         const responseData = getNewUserData(user);
@@ -85,20 +89,23 @@ function checkMobileNetwork(phoneNo) {
   }
 }
 
-async function sendServerOtp(phoneNo) {
+async function sendServerOtp(phoneNo , genratedOtp) {
+
 
   const network_type = checkMobileNetwork(phoneNo);
+
+
 
   function getNetworkTypeAccordingSMSAPi(network_type, phoneNo) {
       switch (network_type) {
           case 'MOBICOM':
-              return `http://27.123.214.168/smsmt/mt?servicename=mig&username=daatgal&from=136000&to=${phoneNo}&msg=test`;
+              return `http://27.123.214.168/smsmt/mt?servicename=mig&username=daatgal&from=136000&to=${phoneNo}&msg=${genratedOtp}`;
           case 'SKYTEL':
-              return `http://smsgw.skytel.mn/SMSGW-war/pushsms?id=1000076&src=136000&dest=${phoneNo}&text=turshilt`;
+              return `http://smsgw.skytel.mn/SMSGW-war/pushsms?id=1000076&src=136000&dest=${phoneNo}&text=${genratedOtp}`;
           case 'UNITEL':
-              return `https://sms.unitel.mn/sendSMS.php?uname=mig&upass=Unitel88&sms=test&from=136000&mobile=${phoneNo}`;
+              return `https://sms.unitel.mn/sendSMS.php?uname=mig&upass=Unitel88&sms=${genratedOtp}&from=136000&mobile=${phoneNo}`;
           case 'GMOBILE':
-              return `https://smstusgai.gmobile.mn/cgi-bin/sendsms?username=mig_daatgal&password=daatgal*136&from=136000&to=${phoneNo}&text=message`;
+              return `https://smstusgai.gmobile.mn/cgi-bin/sendsms?username=mig_daatgal&password=daatgal*136&from=136000&to=${phoneNo}&text=${genratedOtp}`;
       }
   }
 

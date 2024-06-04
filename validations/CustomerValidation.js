@@ -2,15 +2,29 @@ const { body } = require('express-validator');
 const { Customer, User } = require('../models');
 
 const CustomerValidation = [
-  body('FirstName').exists().withMessage('First Name is required')
-  .bail()
-  .isAlpha().withMessage('First Name must contain only alphabetic characters')
-  .isUppercase().withMessage('First Name must be capitalized'),
+//   body('FirstName').exists().withMessage('First Name is required')
+//   .bail()
+//   .isAlpha().withMessage('First Name must contain only alphabetic characters')
+//   .isUppercase().withMessage('First Name must be capitalized'),
 
-  body('LastName').exists().withMessage('Last name is required')
-  .bail()
-  .isAlpha().withMessage('Last Name must contain only alphabetic characters')
-  .isUppercase().withMessage('Last Name must be capitalized'),
+//   body('LastName').exists().withMessage('Last name is required')
+//   .bail()
+//   .isAlpha().withMessage('Last Name must contain only alphabetic characters')
+//   .isUppercase().withMessage('Last Name must be capitalized'),
+    body('FirstName')
+    .exists().withMessage('First Name is required')
+    .bail()
+    .matches(/^[A-Za-z\s]+$/).withMessage('First Name must contain only alphabetic characters and spaces')
+    .bail()
+    .custom(value => /^[A-Z]/.test(value)).withMessage('First Name must be capitalized'),
+
+    body('LastName')
+    .exists().withMessage('Last name is required')
+    .bail()
+    .matches(/^[A-Za-z\s]+$/).withMessage('Last Name must contain only alphabetic characters and spaces')
+    .bail()
+    .custom(value => /^[A-Z]/.test(value)).withMessage('Last Name must be capitalized'),
+
 
   body('PhoneNo').exists().withMessage('Phone number is required')
       .bail()

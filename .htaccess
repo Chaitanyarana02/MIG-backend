@@ -1,0 +1,9 @@
+RewriteEngine On
+RewriteBase /
+
+# Allow direct access to files under the 'public/' directory
+RewriteRule ^public/ - [L]
+
+# Allow access to files under 'public/certificate/' directory
+RewriteCond %{REQUEST_URI} !^/public/certificate/
+RewriteRule ^(.*)$ public/certificate/$1 [L]

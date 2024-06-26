@@ -671,6 +671,8 @@ async function updateRecords() {
     });
 
     await Promise.all(updatePromises);
+    console.log(responseData);
+    console.log(matchedResponse);
     console.log('Update process completed.');
   } catch (error) {
     console.error('Error fetching or updating data:', error);

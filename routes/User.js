@@ -2,8 +2,32 @@ const express = require('express');
 const UserController = require('../Controllers/UserController.js');
 const authMiddleware = require('../Middlewares/AuthMiddleware');
 const multer = require('multer');
-const upload = multer({ dest: './uploads' });
+
 const router= express.Router();
+
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      const uploadPath = path.join(__dirname, 'uploads');
+      if (!fs.existsSync(uploadPath)) {
+        fs.mkdirSync(uploadPath, { recursive: true });
+      }
+      cb(null, uploadPath);
+    },
+    filename: function (req, file, cb) {
+      cb(null, Date.now() + '-' + file.originalname);
+    }
+  });
+  
+  const upload = multer({
+    storage: storage,
+    limits: {
+      fileSize: 1024 * 1024 * 2048, // 2GB per file
+      fieldSize: 1024 * 1024 * 2048,  // 10MB per field
+      fields: 50,                   // limit the number of non-file fields
+      files: 10                     // limit the number of file fields
+    }
+  });
+
 
 
 router.post('/customer-login',upload.none(), UserController.login);

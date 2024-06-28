@@ -201,9 +201,9 @@ async function currentuser(req, res) {
 
 async function guranteelist(req, res) {
   try {
-    // const BASES_URL= '202.131.231.212';
+    // const BASES_URL= 'localhost';
     const { RegisterNo } = req.query;
-    const BASE_URL = 'http://202.131.231.212:93/api/Guarantee/List';
+    const BASE_URL = 'http://localhost:93/api/Guarantee/List';
     const apiKey = 'HABBVtrHLF3YV';
     const response = await axios.get(BASE_URL, {
       params: { RegisterNo },
@@ -226,7 +226,7 @@ async function guranteelist(req, res) {
 async function quitsList(req, res) {
   try {
     const { SearchTypeId, SearchValue } = req.query;
-    const BASE_URL = 'http://202.131.231.212:93/api/Quits/List';
+    const BASE_URL = 'http://localhost:93/api/Quits/List';
     const apiKey = 'HABBVtrHLF3YV';
     const response = await axios.get(BASE_URL, {
       params: { SearchTypeId, SearchValue },
@@ -254,7 +254,7 @@ async function quitsdelete(req, res) {
   try {
 
     const { f1 } = req.body;
-    const BASE_URL = 'http://202.131.231.212:93/api/Quits/Delete';
+    const BASE_URL = 'http://localhost:93/api/Quits/Delete';
     const apiKey = 'HABBVtrHLF3YV';
     const response = await axios.post(BASE_URL, {
       f1: f1
@@ -293,7 +293,7 @@ async function sendclaim(req, res) {
       f12,
       f13
     } = req.body;
-    const BASE_URL = 'http://202.131.231.212:93/api/Quits/Insert';
+    const BASE_URL = 'http://localhost:93/api/Quits/Insert';
     const apiKey = 'HABBVtrHLF3YV';
 
     const response = await axios.post(BASE_URL, {

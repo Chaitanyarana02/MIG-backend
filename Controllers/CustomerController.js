@@ -43,7 +43,7 @@ async function store(req, res) {
 
         let user = await User.findOne({ where: { phoneNo: PhoneNo, UserType: 0 } });
         if (!user) {
-            user = await User.create({ phoneNo: PhoneNo });
+            user = await User.create({ phoneNo: PhoneNo , isActive:false  });
         }
 
         const newRegisterData = {
@@ -52,7 +52,8 @@ async function store(req, res) {
             RegisterNo,
             PhoneNo,
             IsForigner,
-            UserId: userId
+            UserId: userId,
+
         };
 
         // Save each certificate if present
@@ -348,7 +349,7 @@ async function storeExcel(req, res) {
             const RegisterNo = normalizedRow['регистрийн дугаар'];
             let user = await User.findOne({ where: { phoneNo: PhoneNo } });
             if (!user) {
-                user = await User.create({ phoneNo: PhoneNo });
+                user = await User.create({ phoneNo: PhoneNo ,isActive:false });
             }
             await Customer.create({
                 FirstName,
@@ -414,6 +415,7 @@ async function edit(req, res) {
         if (req.body.IsForigner !== undefined) {
             customer.IsForigner = req.body.IsForigner;
         }
+        
 
         // Update the certificates if new files are provided
         // if (req.files.CivilWarCertificate) {
@@ -476,12 +478,16 @@ async function edit(req, res) {
         }
         await customer.save();
         const user = await User.findOne({ where: { PhoneNo: req.query.PhoneNo ? req.query.PhoneNo : currentUser.phoneNo } });
+
+
+
         // console.log(user);
         if (user) {
             user.userType = '0';
             user.phoneNo = req.body.PhoneNo || user.phoneNo;
-
-        
+            if(req.body.isActive !== undefined){
+                user.isActive = req.body.isActive;
+            }
             await user.save();
 
     

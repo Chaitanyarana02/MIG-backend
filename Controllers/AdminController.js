@@ -22,7 +22,7 @@ async function store(req, res) {
     const { LastName, Name, RegisterNumber, PhoneNo } = req.body;
     const userId = req.user.id;
     const newAdmin = await Admin.create({ LastName, Name, RegisterNumber, PhoneNo, UserId: userId});
-    await User.create({ phoneNo: PhoneNo, userType:"1" });
+    await User.create({ phoneNo: PhoneNo, userType:"1" ,isActive:true });
     const data = getNewUserData(newAdmin);
     res.status(201).json({ 
         data: data,
@@ -213,14 +213,21 @@ async function getAdminsAndUsers(req, res) {
         const { count: userCount, rows: users } = await Customer.findAndCountAll({
             where: userWhereCondition,
             order: [['createdAt', order]],
+            include: [
+                {
+                    model: User,
+                    as: 'User',
+                    required: false, 
+                }
+            ],      
             limit: perPage,
             offset: offset
         });
 
         // Merge admins and users
         const combinedData = [
-            ...admins.map(admin => ({ ...admin.get(), userType: 'Manager' })),
-            ...users.map(user => ({ ...user.get(), userType: 'User' }))
+            ...admins.map(admin => ({ ...admin.get(), userType: 'Manager'  })),
+            ...users.map(user => ({ ...user.get(), userType: 'User'  }))
         ];
 
         const totalCount = adminCount + userCount;

@@ -31,6 +31,14 @@ async function login(req, res) {
         });
         }
 
+        if(!user.isActive){
+          return res.status(401).json({
+            status: 'false',
+            statusCode: 401,
+            message: 'User is not active' 
+        });
+        }
+
         let generatedOtp ;
         if(user.userType != 2){
           generatedOtp = Math.floor(100000 + Math.random() * 900000);
@@ -584,14 +592,14 @@ async function updateRecords() {
               "beginDate": "2023-12-18T00:00:00",
               "endDate": "2024-12-17T00:00:00",
               "contractStatusName": "Идэвхтэй",
-              "quitsNo": "2406294",
+              "quitsNo": "2406311",
               "calledDate": "2024-03-24T00:00:00",
               "invoiceDate": "2024-03-24T00:00:00",
               "riskDate": "2024-03-24T00:00:00",
               "invoiceAmount": 445,
               "statusName": "Тооцоолж буй",
               "quitsImages": [
-                  {
+                  { 
                       "f1": 1,
                       "f2": "https://mig.xolbooc.com/storage/quit/2024-06-03/665d883e8b881.jpeg",
                       "f3": "https://mig.xolbooc.com/storage/quit/2024-06-03/665d883e8b881.jpeg"
@@ -601,11 +609,14 @@ async function updateRecords() {
       ]
   }
 
+  let ApiRes = response.data.quitsLists;
+  // const ApiRes = staticRespons.quitsLists;
 
+  
+    if(!ApiRes){
+       ApiRes = staticRespons.quitsLists;
+    } 
 
-
-    const ApiRes = response.data.quitsLists;
-    // const ApiRes = staticRespons.quitsLists;
     let sendClaims;
     if (SearchValue == 'all') {
       sendClaims = await SendClaim.findAll({
@@ -669,10 +680,9 @@ async function updateRecords() {
       }
       return null;
     });
+    console.log(updatePromises);
 
     await Promise.all(updatePromises);
-    console.log(responseData);
-    console.log(matchedResponse);
     console.log('Update process completed.');
   } catch (error) {
     console.error('Error fetching or updating data:', error);
@@ -680,7 +690,7 @@ async function updateRecords() {
 }
 
 // Schedule the cron job to run every day at 3:00 AM
-cron.schedule('* * * * *', async () => {
+cron.schedule('*/10 * * * *', async () => {
   console.log('Starting update process...');
   await updateRecords();
 });

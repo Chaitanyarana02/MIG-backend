@@ -3,15 +3,15 @@ const { Admin, User } = require('../models');
 
 
 const AdminValidation = [
-    body('Name').exists().withMessage('Name is required')
-    .bail()
-    .isAlpha().withMessage('Name must contain only alphabetic characters')
-    .isUppercase().withMessage('Name must be capitalized'),
+    // body('Name').exists().withMessage('Name is required')
+    // .bail()
+    // .isAlpha().withMessage('Name must contain only alphabetic characters')
+    // .isUppercase().withMessage('Name must be capitalized'),
 
-    body('LastName').exists().withMessage('Last name is required')
-    .bail()
-    .isAlpha().withMessage('Last Name must contain only alphabetic characters')
-    .isUppercase().withMessage('Last Name must be capitalized'),
+    // body('LastName').exists().withMessage('Last name is required')
+    // .bail()
+    // .isAlpha().withMessage('Last Name must contain only alphabetic characters')
+    // .isUppercase().withMessage('Last Name must be capitalized'),
 
     body('PhoneNo').exists().withMessage('Phone number is required')
         .bail()

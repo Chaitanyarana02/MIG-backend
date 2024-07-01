@@ -1,14 +1,15 @@
-const { Admin, User ,Customer} = require('../models');
+const { Admin, User ,Customer ,QuitsImages} = require('../models');
 const { getNewUserData  } = require('../Response/AdminResponse.js');
 const { paginate } = require('../Response/Pagination');
 const { validationResult } = require('express-validator');
 const { Op } = require('sequelize');
+const axios = require('axios');
 
 
 async function store(req, res) {
   try {
     const currentUser = req.user;
-    if (!currentUser || currentUser.userType !== '2') {
+    if (!currentUser) {
         return res.status(401).json({ 
             status: 'false',
             statusCode: 401,
@@ -22,7 +23,7 @@ async function store(req, res) {
     const { LastName, Name, RegisterNumber, PhoneNo } = req.body;
     const userId = req.user.id;
     const newAdmin = await Admin.create({ LastName, Name, RegisterNumber, PhoneNo, UserId: userId});
-    await User.create({ phoneNo: PhoneNo, userType:"1" });
+    await User.create({ phoneNo: PhoneNo, userType:"1" ,isActive:true });
     const data = getNewUserData(newAdmin);
     res.status(201).json({ 
         data: data,
@@ -79,7 +80,7 @@ async function getadmins(req, res) {
         }
         const mappedAdmins = admins.map(admin => getNewUserData(admin));
 
-        const paginationData = paginate(mappedAdmins, count, parseInt(page), perPage, 'http://localhost:3011/api/get-admins');
+        const paginationData = paginate(mappedAdmins, count, parseInt(page), perPage, 'https://eclaim.mig.mn/api/get-admins');
         
 
         res.status(200).json(paginationData);
@@ -152,7 +153,7 @@ async function getadmins(req, res) {
 //         const mappedData = combinedData.map(item => getNewUserData(item));
 
 //         // Apply pagination
-//         const paginationData = paginate(mappedData, totalCount, parseInt(page), perPage, 'http://localhost:3011/api/get-admins');
+//         const paginationData = paginate(mappedData, totalCount, parseInt(page), perPage, 'https://eclaim.mig.mn/api/get-admins');
 
 //         res.status(200).json(paginationData);
 //     } catch (error) {
@@ -164,10 +165,11 @@ async function getadmins(req, res) {
 //         });
 //     }
 // }
+
 async function getAdminsAndUsers(req, res) {
     try {
         const currentUser = req.user;
-        if (!currentUser || currentUser.userType !== '2') {
+        if (!currentUser ) {
             return res.status(401).json({
                 status: 'false',
                 statusCode: 401,
@@ -212,14 +214,21 @@ async function getAdminsAndUsers(req, res) {
         const { count: userCount, rows: users } = await Customer.findAndCountAll({
             where: userWhereCondition,
             order: [['createdAt', order]],
+            include: [
+                {
+                    model: User,
+                    as: 'User',
+                    required: false, 
+                }
+            ],      
             limit: perPage,
             offset: offset
         });
 
         // Merge admins and users
         const combinedData = [
-            ...admins.map(admin => ({ ...admin.get(), userType: 'Manager' })),
-            ...users.map(user => ({ ...user.get(), userType: 'User' }))
+            ...admins.map(admin => ({ ...admin.get(), userType: 'Manager'  })),
+            ...users.map(user => ({ ...user.get(), userType: 'User'  }))
         ];
 
         const totalCount = adminCount + userCount;
@@ -236,7 +245,7 @@ async function getAdminsAndUsers(req, res) {
         const mappedData = combinedData.map(item => getNewUserData(item));
 
         // Apply pagination
-        const paginationData = paginate(mappedData, totalCount, parseInt(page), perPage, 'http://localhost:3011/api/get-admins');
+        const paginationData = paginate(mappedData, totalCount, parseInt(page), perPage, 'https://eclaim.mig.mn/api/get-admins');
 
         res.status(200).json(paginationData);
     } catch (error) {
@@ -248,8 +257,6 @@ async function getAdminsAndUsers(req, res) {
         });
     }
 }
-
-
 
 async function editadmin(req, res) {
     try {
@@ -291,7 +298,6 @@ async function editadmin(req, res) {
         });
     }
 }
-
 
 async function showadmin(req, res) {
     try {
@@ -366,13 +372,79 @@ async function currentadmin(req, res) {
         message: 'Internal server error'
       });
     }
+}
+
+async function getClaimImg(req, res) {
+    try {
+        // Assuming req.body.sendClaimId contains the sendClaimId value
+        const sendClaimId = req.query.sendClaimId;
+  
+        // Fetch QuitsImages based on sendClaimId
+        const Images = await QuitsImages.findAll({ where: { sendClaimId } });
+  
+        if (!Images) {
+            // Handle case where no image is found
+            return res.status(404).json({
+                status: 'error',
+                message: 'No image found for the provided sendClaimId.',
+            });
+        }
+  
+        // Return the found image data
+        return res.json({
+            status: 'success',
+            message: 'Image found successfully.',
+            image: Images, // Adjust this based on how you want to structure the response
+        });
+    } catch (error) {
+        console.error('Error fetching image:', error);
+        return res.status(500).json({
+            status: 'error',
+            message: 'Failed to fetch image.',
+            error: error.message,
+        });
+    }
   }
 
+  async function getImg(req, res)  {
+    const { name } = req.params;
+    const imageUrl = `http://localhost:3012/certificate/${name}`;
+  
+    try {
+      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+      const imageBuffer = Buffer.from(response.data, 'binary');
+  
+      res.set('Content-Type', 'image/*');
+      res.send(imageBuffer);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Error fetching image' });
+    }
+  };
+
+  async function getclaimsImg(req, res)  {
+    const { name } = req.params;
+    const imageUrl = `http://localhost:3012/sendclaim/${name}`;
+  
+    try {
+      const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+      const imageBuffer = Buffer.from(response.data, 'binary');
+  
+      res.set('Content-Type', 'image/*');
+      res.send(imageBuffer);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Error fetching image' });
+    }
+  };
 
 
 module.exports = { 
     store,
     getadmins,
+    getClaimImg,
+    getImg,
+    getclaimsImg,
     getAdminsAndUsers,
     editadmin,
     showadmin,

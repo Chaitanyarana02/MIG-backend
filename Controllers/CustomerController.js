@@ -9,6 +9,8 @@ const AWS = require('aws-sdk');
 require('dotenv').config();
 const fs = require('fs');
 const { Op } = require('sequelize');
+const path = require('path');
+
 
 AWS.config.update({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -17,91 +19,195 @@ AWS.config.update({
 });
 const s3 = new AWS.S3();
 
-
-
 async function store(req, res) {
     try {
         const currentUser = req.user;
-        if (!currentUser || currentUser.userType == '0') {
+        if (!currentUser || currentUser.userType === '0') {
             return res.status(401).json({ 
                 status: 'false',
                 statusCode: 401,
-                message: 'You don`t have permission to access' });
+                message: 'You don`t have permission to access' 
+            });
         }
 
         const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
         const { FirstName, LastName, RegisterNo, PhoneNo, IsForigner } = req.body;
-        const {CivilWarCertificate,IdentitybackCertificate,VehicleCertificate, 
-            SteeringWheelCertificate, 
-            DrivingLinceseback} = req.files;
-        // console.log(req.files);
+        const { CivilWarCertificate, IdentitybackCertificate, VehicleCertificate, 
+                SteeringWheelCertificate, DrivingLinceseback } = req.files;
+
         const userId = req.user.id;
-        let user = await User.findOne({ where: { phoneNo: PhoneNo, UserType:0 } });
+
+        let user = await User.findOne({ where: { phoneNo: PhoneNo, UserType: 0 } });
         if (!user) {
-            user = await User.create({ phoneNo: PhoneNo });
+            user = await User.create({ phoneNo: PhoneNo , isActive:false  });
         }
 
-            const newRegisterData = {
-                FirstName,
-                LastName,
-                RegisterNo,
-                PhoneNo,
-                IsForigner,
-                CivilWarCertificate, 
-                IdentitybackCertificate, 
-                VehicleCertificate, 
-                SteeringWheelCertificate, 
-                DrivingLinceseback,
-                UserId: userId
-            };
-            // console.log(newRegisterData);
-            if (CivilWarCertificate) {
-                const civilWarUrl = await uploadToS3(CivilWarCertificate[0]);
-                newRegisterData.CivilWarCertificate = civilWarUrl;
-            }
+        const newRegisterData = {
+            FirstName,
+            LastName,
+            RegisterNo,
+            PhoneNo,
+            IsForigner,
+            UserId: userId,
 
-            if (IdentitybackCertificate && IdentitybackCertificate.length > 0) {
-                const IdentitybackCertificateUrl = await uploadToS3(IdentitybackCertificate[0]);
-                newRegisterData.IdentitybackCertificate = IdentitybackCertificateUrl;
-            }
+        };
 
-            if (VehicleCertificate) {
-                const VehicleCertificateUrl = await uploadToS3(VehicleCertificate[0]);
-                newRegisterData.VehicleCertificate = VehicleCertificateUrl;
-            }
-
-            if (SteeringWheelCertificate) {
-                const SteeringWheelCertificateUrl = await uploadToS3(SteeringWheelCertificate[0]);
-                newRegisterData.SteeringWheelCertificate = SteeringWheelCertificateUrl;
-            }
-
-            if (DrivingLinceseback) {
-                const DrivingLincesebackUrl = await uploadToS3(DrivingLinceseback[0]);
-                newRegisterData.DrivingLinceseback = DrivingLincesebackUrl;
-            }
-            const newRegister = await Customer.create(newRegisterData);
-
-            const data = getNewUserData(newRegister);
-
-            res.status(201).json({
-                data: data,
-                status: 'true',
-                statusCode: 200,
-                message: 'Customer registered successfully'
-            });
-        
-        } catch (error) {
-            console.error('Error occurred while storing customer:', error);
-            res.status(500).json({
-                status: 'false',
-                statusCode: 500,
-                message: 'Internal server error'
-            });
+        // Save each certificate if present
+        if (CivilWarCertificate) {
+            const civilWarUrl = await saveToLocal(CivilWarCertificate[0]);
+            newRegisterData.CivilWarCertificate = civilWarUrl;
         }
+
+        if (IdentitybackCertificate && IdentitybackCertificate.length > 0) {
+            const IdentitybackCertificateUrl = await saveToLocal(IdentitybackCertificate[0]);
+            newRegisterData.IdentitybackCertificate = IdentitybackCertificateUrl;
+        }
+
+        if (VehicleCertificate) {
+            const VehicleCertificateUrl = await saveToLocal(VehicleCertificate[0]);
+            newRegisterData.VehicleCertificate = VehicleCertificateUrl;
+        }
+
+        if (SteeringWheelCertificate) {
+            const SteeringWheelCertificateUrl = await saveToLocal(SteeringWheelCertificate[0]);
+            newRegisterData.SteeringWheelCertificate = SteeringWheelCertificateUrl;
+        }
+
+        if (DrivingLinceseback) {
+            const DrivingLincesebackUrl = await saveToLocal(DrivingLinceseback[0]);
+            newRegisterData.DrivingLinceseback = DrivingLincesebackUrl;
+        }
+
+        // Create new customer entry
+        const newRegister = await Customer.create(newRegisterData);
+        const data = getNewUserData(newRegister);
+
+        // Respond with success message and customer data
+        res.status(201).json({
+            data: data,
+            status: 'true',
+            statusCode: 200,
+            message: 'Customer registered successfully'
+        });
+
+    } catch (error) {
+        console.error('Error occurred while storing customer:', error);
+        res.status(500).json({
+            status: 'false',
+            statusCode: 500,
+            message: 'Internal server error'
+        });
+    }
 }
+
+async function saveToLocal(file) {
+    const extension = path.extname(file.originalname);
+    const fileName = `${Date.now()}${extension}`; // Unique filename
+    const uploadDir = path.join(__dirname, '..', 'public', 'certificate');
+
+    if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    const filePath = path.join(uploadDir, fileName);
+    await fs.promises.rename(file.path, filePath);
+
+    // Return relative path to be stored in database
+    return `https://eclaim.mig.mn/api/certificate/${fileName}`;
+}
+
+
+// async function store(req, res) {
+//     try {
+//         const currentUser = req.user;
+//         if (!currentUser || currentUser.userType == '0') {
+//             return res.status(401).json({ 
+//                 status: 'false',
+//                 statusCode: 401,
+//                 message: 'You don`t have permission to access' });
+//         }
+
+//         const errors = validationResult(req);
+//     if (!errors.isEmpty()) {
+//         return res.status(400).json({ errors: errors.array() });
+//     }
+//         const { FirstName, LastName, RegisterNo, PhoneNo, IsForigner } = req.body;
+//         const {CivilWarCertificate,IdentitybackCertificate,VehicleCertificate, 
+//             SteeringWheelCertificate, 
+//             DrivingLinceseback} = req.files;
+//         // console.log(req.files);
+//         const userId = req.user.id;
+//         let user = await User.findOne({ where: { phoneNo: PhoneNo, UserType:0 } });
+//         if (!user) {
+//             user = await User.create({ phoneNo: PhoneNo });
+//         }
+
+//             const newRegisterData = {
+//                 FirstName,
+//                 LastName,
+//                 RegisterNo,
+//                 PhoneNo,
+//                 IsForigner,
+//                 CivilWarCertificate, 
+//                 IdentitybackCertificate, 
+//                 VehicleCertificate, 
+//                 SteeringWheelCertificate, 
+//                 DrivingLinceseback,
+//                 UserId: userId
+//             };
+//             // console.log(newRegisterData);
+//             if (CivilWarCertificate) {
+//                 const civilWarUrl = await uploadToS3(CivilWarCertificate[0]);
+//                 newRegisterData.CivilWarCertificate = civilWarUrl;
+//             }
+
+//             if (IdentitybackCertificate && IdentitybackCertificate.length > 0) {
+//                 const IdentitybackCertificateUrl = await uploadToS3(IdentitybackCertificate[0]);
+//                 newRegisterData.IdentitybackCertificate = IdentitybackCertificateUrl;
+//             }
+
+//             if (VehicleCertificate) {
+//                 const VehicleCertificateUrl = await uploadToS3(VehicleCertificate[0]);
+//                 newRegisterData.VehicleCertificate = VehicleCertificateUrl;
+//             }
+
+//             if (SteeringWheelCertificate) {
+//                 const SteeringWheelCertificateUrl = await uploadToS3(SteeringWheelCertificate[0]);
+//                 newRegisterData.SteeringWheelCertificate = SteeringWheelCertificateUrl;
+//             }
+
+//             if (DrivingLinceseback) {
+//                 const DrivingLincesebackUrl = await uploadToS3(DrivingLinceseback[0]);
+//                 newRegisterData.DrivingLinceseback = DrivingLincesebackUrl;
+//             }
+
+
+
+            
+//             const newRegister = await Customer.create(newRegisterData);
+
+//             const data = getNewUserData(newRegister);
+
+//             res.status(201).json({
+//                 data: data,
+//                 status: 'true',
+//                 statusCode: 200,
+//                 message: 'Customer registered successfully'
+//             });
+        
+//         } catch (error) {
+//             console.error('Error occurred while storing customer:', error);
+//             res.status(500).json({
+//                 status: 'false',
+//                 statusCode: 500,
+//                 message: 'Internal server error'
+//             });
+//         }
+// }
 async function uploadToS3(file) {
    const extension = file.originalname.split('.').pop(); // Extract the file extension
     const key = `${file.filename}.${extension}`; // Append the extension to the file name
@@ -157,7 +263,7 @@ async function get(req, res) {
             });
         }
         const customerdata = customers.map(customer => getNewUserData(customer));
-        const paginationData = paginate(customerdata, count, parseInt(page), perPage, 'http://localhost:3011/api/get-customers');
+        const paginationData = paginate(customerdata, count, parseInt(page), perPage, 'https://eclaim.mig.mn/api/get-customers');
 
         res.status(200).json(paginationData);
     } catch (error) {
@@ -243,7 +349,7 @@ async function storeExcel(req, res) {
             const RegisterNo = normalizedRow['регистрийн дугаар'];
             let user = await User.findOne({ where: { phoneNo: PhoneNo } });
             if (!user) {
-                user = await User.create({ phoneNo: PhoneNo });
+                user = await User.create({ phoneNo: PhoneNo ,isActive:false });
             }
             await Customer.create({
                 FirstName,
@@ -270,14 +376,14 @@ async function storeExcel(req, res) {
 async function edit(req, res) {
     try {
         const currentUser = req.user;
-        if (!currentUser || currentUser.userType !== '0') {
+        if (!currentUser) {
             return res.status(401).json({ 
                 status: 'false',
                 statusCode: 401,
                 message: 'You don`t have permission to access' });
         }
 
-        const customer = await Customer.findOne({ where: { PhoneNo: currentUser.phoneNo } });
+        const customer = await Customer.findOne({ where: { PhoneNo: req.query.PhoneNo ? req.query.PhoneNo : currentUser.phoneNo } });
         if (!customer) {
             return res.status(404).json({ message: 'Customer not found' });
         }
@@ -309,35 +415,83 @@ async function edit(req, res) {
         if (req.body.IsForigner !== undefined) {
             customer.IsForigner = req.body.IsForigner;
         }
+        
 
         // Update the certificates if new files are provided
-        if (req.files.CivilWarCertificate) {
-            const civilWarUrl = await uploadToS3(req.files.CivilWarCertificate[0]);
+        // if (req.files.CivilWarCertificate) {
+        //     const civilWarUrl = await uploadToS3(req.files.CivilWarCertificate[0]);
+        //     customer.CivilWarCertificate = civilWarUrl;
+        // }
+        // if (req.files.IdentitybackCertificate) {
+        //     const IdentitybackCertificateUrl = await uploadToS3(req.files.IdentitybackCertificate[0]);
+        //     customer.IdentitybackCertificate = IdentitybackCertificateUrl;  
+        // }
+        // if (req.files.VehicleCertificate) {
+        //     const VehicleCertificateUrl = await uploadToS3(req.files.VehicleCertificate[0]);
+        //     customer.VehicleCertificate = VehicleCertificateUrl;  
+        // }
+        // if (req.files.SteeringWheelCertificate) {
+        //     const SteeringWheelCertificateUrl = await uploadToS3(req.files.SteeringWheelCertificate[0]);
+        //     customer.SteeringWheelCertificate = SteeringWheelCertificateUrl;
+        // }
+        // if (req.files.DrivingLinceseback) {
+        //     const DrivingLincesebackUrl = await uploadToS3(req.files.DrivingLinceseback[0]);
+        //     customer.DrivingLinceseback = DrivingLincesebackUrl;
+        // }
+
+        // const saveToLocal = async (file) => {
+        //     if (!file || !file.buffer) {
+        //         throw new Error('Invalid file or file buffer is missing');
+        //     }
+        //     const extension = file.originalname.split('.').pop();
+        //     const fileName = `${Date.now()}-${file.originalname}`; // Unique filename
+        //     const filePath = path.join(__dirname, '..', 'public', 'certificate', fileName);
+        //     await fs.writeFile(filePath, file.buffer);
+        //     return `/certificate/${fileName}`; // Return relative path for storing in database
+        // };
+
+        // Update the certificates if new files are provided
+        if (req.files && req.files.CivilWarCertificate) {
+            const civilWarUrl = await saveToLocal(req.files.CivilWarCertificate[0]);
             customer.CivilWarCertificate = civilWarUrl;
         }
-        if (req.files.IdentitybackCertificate) {
-            const IdentitybackCertificateUrl = await uploadToS3(req.files.IdentitybackCertificate[0]);
+        if (req.files && req.files.IdentitybackCertificate) {
+            const IdentitybackCertificateUrl = await saveToLocal(req.files.IdentitybackCertificate[0]);
             customer.IdentitybackCertificate = IdentitybackCertificateUrl;  
         }
-        if (req.files.VehicleCertificate) {
-            const VehicleCertificateUrl = await uploadToS3(req.files.VehicleCertificate[0]);
+        if (req.files && req.files.VehicleCertificate) {
+            const VehicleCertificateUrl = await saveToLocal(req.files.VehicleCertificate[0]);
             customer.VehicleCertificate = VehicleCertificateUrl;  
         }
-        if (req.files.SteeringWheelCertificate) {
-            const SteeringWheelCertificateUrl = await uploadToS3(req.files.SteeringWheelCertificate[0]);
+        if (req.files && req.files.SteeringWheelCertificate) {
+            const SteeringWheelCertificateUrl = await saveToLocal(req.files.SteeringWheelCertificate[0]);
             customer.SteeringWheelCertificate = SteeringWheelCertificateUrl;
         }
-        if (req.files.DrivingLinceseback) {
-            const DrivingLincesebackUrl = await uploadToS3(req.files.DrivingLinceseback[0]);
+        if (req.files && req.files.DrivingLinceseback) {
+            const DrivingLincesebackUrl = await saveToLocal(req.files.DrivingLinceseback[0]);
             customer.DrivingLinceseback = DrivingLincesebackUrl;
         }
+
+
+        if(req.body.userType !== undefined){
+            customer.userType = req.body.userType;
+        }
         await customer.save();
-        const user = await User.findOne({ where: { phoneNo: currentUser.phoneNo } });
+        const user = await User.findOne({ where: { PhoneNo: req.query.PhoneNo ? req.query.PhoneNo : currentUser.phoneNo } });
+
+
+
         // console.log(user);
-    if (user) {
-        user.phoneNo = req.body.PhoneNo || user.phoneNo;
-        await user.save();
-    }
+        if (user) {
+            user.userType = '0';
+            user.phoneNo = req.body.PhoneNo || user.phoneNo;
+            if(req.body.isActive !== undefined){
+                user.isActive = req.body.isActive;
+            }
+            await user.save();
+
+    
+            }   
         res.status(200).json({
             data: customer,
             status: 'true',

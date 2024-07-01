@@ -17,11 +17,14 @@ const fileFilter = (req, file, cb) => {
     if (
         file.mimetype.startsWith('image/') ||
         file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-        file.mimetype === 'application/vnd.ms-excel'
+        file.mimetype === 'application/vnd.ms-excel' ||
+        file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        file.mimetype === 'application/msword' ||
+        file.mimetype === 'application/pdf' 
     ) {
         cb(null, true); // Allow the file
     } else {
-        cb(new Error('File type not supported. Only images and Excel files are allowed.'), false); // Reject the file
+        cb(new Error('File type not supported.'), false); // Reject the file
     }
 };
 

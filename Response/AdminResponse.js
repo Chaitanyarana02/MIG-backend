@@ -13,7 +13,8 @@ const getNewUserData = (user) => ({
     DrivingLinceseback: user.DrivingLinceseback,
     UserTypeText:user.userType,
     updatedAt: user.updatedAt,
-    createdAt: user.createdAt
+    createdAt: user.createdAt,
+    isActive: user.User ? user.User.isActive : "falsee"
   });
   
   module.exports = {

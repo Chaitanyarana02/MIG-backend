@@ -10,7 +10,7 @@ const getNewUserData = (user) =>  {
   
   return {
     id: user.id,
-    otp: user.otp,
+    // otp: user.otp,
     phoneNo: user.phoneNo,
     isOtpVerified: user.isOtpVerified,
     userType: user.userType,

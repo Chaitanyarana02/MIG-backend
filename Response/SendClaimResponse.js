@@ -4,7 +4,7 @@ const getClaim = (claim) => ({
     quitsNo:claim.quitsNo,
     beginDate:claim.beginDate || claim.f7,
     endDate:claim.endDate || claim.f8,
-    rate: claim.rate || claim.f13 ,
+    rate: claim.rate || '' ,
     phoneNo:claim.f11 ,
     productName:claim.productName || '',
     productDiscription:claim.f12,

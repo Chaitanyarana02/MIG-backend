@@ -39,32 +39,47 @@ async function login(req, res) {
         });
         }
 
-        let generatedOtp ;
-        if(user.userType != 2){
-          generatedOtp = Math.floor(100000 + Math.random() * 900000);
-          user.otp = generatedOtp;
-        await user.save();
-        } else{
-          generatedOtp = '000000'
-          user.otp = generatedOtp;
-        }
-        await user.save();
-        
-        
-        
-        const server_otp_status = await sendServerOtp(phoneNo,generatedOtp) ; 
-        const sms_services_use = await checkMobileNetwork(phoneNo) ; 
-         
-        const responseData = getNewUserData(user);
+        if(!user.password){
 
-      res.status(200).json({
-            data:responseData,
-            serverOTPsendStatus:server_otp_status ,
-            smsService:sms_services_use ,
+            let generatedOtp ;
+            if(user.userType != 2){
+              generatedOtp = Math.floor(100000 + Math.random() * 900000);
+              user.otp = generatedOtp;
+            await user.save();
+            } else{
+              generatedOtp = '000000'
+              user.otp = generatedOtp;
+            }
+            await user.save();  
+            const server_otp_status = await sendServerOtp(phoneNo,generatedOtp) ; 
+            const sms_services_use = await checkMobileNetwork(phoneNo) ; 
+            
+            const responseData = getNewUserData(user);
+    
+              res.status(200).json({
+                    data:responseData,
+                    serverOTPsendStatus:server_otp_status ,
+                    smsService:sms_services_use ,
+                    status: 'true',
+                    statusCode: 200,
+                    message: 'OTP sent successfully'
+            });
+
+          
+        }else{
+
+
+          res.status(200).json({
+            data:getNewUserData(user),  
+            password:true,
             status: 'true',
-            statusCode: 200,
-            message: 'OTP sent successfully'
-      });
+            statusCode: 200
+          });
+
+
+        }
+        
+       
     } catch (error) {
       console.error('Error occurred while sending OTP:', error);
       res.status(500).json({
@@ -73,6 +88,121 @@ async function login(req, res) {
         message: 'Internal server error'
       });
     }
+}
+
+
+async function verifyPassword(req,res){
+  try {
+    const { phoneNo, password } = req.body;
+
+    // Find the user by phone number
+    const user = await User.findOne({ where: { phoneNo } });
+    if (!user) {
+      return res.status(404).json({ status: 'false', statusCode: 404, message: 'User not found' });
+    }
+
+    // Verify the password
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ status: 'false', statusCode: 401, message: 'Invalid password' });
+    }
+
+    // Return user data (excluding the password)
+    const { password: _, ...userWithoutPassword } = user.toJSON();
+
+    const token = jwt.sign({ id: user.id }, 'your_secret_key');
+    const responseData = getNewUserData(user);
+
+    res.status(200).json({
+      data: responseData,
+      token:token,
+      status: 'true',
+      statusCode: 200,
+    });
+  } catch (error) {
+    console.error('Error occurred while verifying password:', error);
+    res.status(500).json({
+      status: 'false',
+      statusCode: 500,
+      message: error.message || 'Internal server error',
+    });
+  }
+
+
+}
+
+async function storePassword(req, res) {
+  try {
+    const { phoneNo, password } = req.body;
+    const user = await User.findOne({ where: { phoneNo } });
+    if (!user) {
+      throw new Error('User not found');
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    user.password = hashedPassword;
+    await user.save();
+     const { password: _, ...userWithoutPassword } = user.toJSON();
+
+     const token = jwt.sign({ id: user.id }, 'your_secret_key');
+     const responseData = getNewUserData(user);
+    res.json({
+      data: responseData,
+      status: 'true',
+      statusCode: 200,
+      token: token
+    });
+
+  } catch (error) {
+    console.error('Error occurred while storing password:', error);
+    res.status(500).json({
+      status: 'false',
+      statusCode: 500,
+      message: error.message || 'Internal server error',
+    });
+  }
+}
+
+async function forgotPassword(req , res){
+
+  try {
+    const { phoneNo, password ,otp } = req.body;
+    const user = await User.findOne({ where: { phoneNo } });
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+
+    if (user.otp !== otp) {
+      return res.status(400).json({ 
+        status: 'false',
+        statusCode: 400,
+        message: 'Invalid OTP!' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    user.password = hashedPassword;
+    await user.save();
+     const { password: _, ...userWithoutPassword } = user.toJSON();
+
+     const token = jwt.sign({ id: user.id }, 'your_secret_key');
+     const responseData = getNewUserData(user);
+    res.json({
+      data: responseData,
+      status: 'true',
+      statusCode: 200,
+      token: token
+    });
+
+  } catch (error) {
+    console.error('Error occurred while storing password:', error);
+    res.status(500).json({
+      status: 'false',
+      statusCode: 500,
+      message: error.message || 'Internal server error',
+    });
+  }
+
+
 }
 
 async function resendOtp(req, res) {
@@ -175,13 +305,13 @@ async function sendServerOtp(phoneNo , genratedOtp) {
   function getNetworkTypeAccordingSMSAPi(network_type, phoneNo) {
       switch (network_type) {
           case 'MOBICOM':
-              return `http://27.123.214.168/smsmt/mt?servicename=mig&username=daatgal&from=136000&to=${phoneNo}&msg=${genratedOtp}`;
+              return `http://27.123.214.168/smsmt/mt?servicename=mig&username=daatgal&from=136000&to=${phoneNo}&msg=MIG Даатгал : Таны нэг удаагийн нэвтрэх нууц үг ${genratedOtp}`;
           case 'SKYTEL':
-              return `http://smsgw.skytel.mn/SMSGW-war/pushsms?id=1000076&src=136000&dest=${phoneNo}&text=${genratedOtp}`;
+              return `http://smsgw.skytel.mn/SMSGW-war/pushsms?id=1000076&src=136000&dest=${phoneNo}&text=MIG Даатгал : Таны нэг удаагийн нэвтрэх нууц үг ${genratedOtp}`;
           case 'UNITEL':
-              return `https://sms.unitel.mn/sendSMS.php?uname=mig&upass=Unitel88&sms=${genratedOtp}&from=136000&mobile=${phoneNo}`;
+              return `https://sms.unitel.mn/sendSMS.php?uname=mig&upass=Unitel88&sms=MIG Даатгал : Таны нэг удаагийн нэвтрэх нууц үг ${genratedOtp}&from=136000&mobile=${phoneNo}`;
           case 'GMOBILE':
-              return `https://smstusgai.gmobile.mn/cgi-bin/sendsms?username=mig_daatgal&password=daatgal*136&from=136000&to=${phoneNo}&text=${genratedOtp}`;
+              return `https://smstusgai.gmobile.mn/cgi-bin/sendsms?username=mig_daatgal&password=daatgal*136&from=136000&to=${phoneNo}&text=MIG Даатгал : Таны нэг удаагийн нэвтрэх нууц үг ${genratedOtp}`;
       }
   }
 
@@ -279,7 +409,7 @@ async function guranteelist(req, res) {
   try {
     // const BASES_URL= 'localhost';
     const { RegisterNo } = req.query;
-    const BASE_URL = 'http://localhost:93/api/Guarantee/List';
+    const BASE_URL = `http://${process.env.EXT_API_PORT}:93/api/Guarantee/List`;
     const apiKey = 'HABBVtrHLF3YV';
     const response = await axios.get(BASE_URL, {
       params: { RegisterNo },
@@ -394,7 +524,7 @@ async function quitsdelete(req, res) {
   try {
 
     const { f1 } = req.body;
-    const BASE_URL = 'http://localhost:93/api/Quits/Delete';
+    const BASE_URL = `http://${process.env.EXT_API_PORT}:93/api/Quits/Delete`;
     const apiKey = 'HABBVtrHLF3YV';
     const response = await axios.post(BASE_URL, {
       f1: f1
@@ -423,7 +553,7 @@ async function sendclaim(req, res) {
   try {
     const {f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11,f12,f13, QUITSIMAGES } = req.body;
 
-    const BASE_URL = 'http://localhost:93/api/Quits/Insert';
+    const BASE_URL = `http://${process.env.EXT_API_PORT}:93/api/Quits/Insert`;
     const apiKey = 'HABBVtrHLF3YV';
     
     const postData = {
@@ -562,7 +692,7 @@ async function logout(req, res) {
 
 
 async function updateRecords() {
-  const BASE_URL = 'http://localhost:93/api/Quits/List';
+  const BASE_URL = `http://${process.env.EXT_API_PORT}:93/api/Quits/List`;
   const apiKey = 'HABBVtrHLF3YV';
 
   try {
@@ -689,16 +819,114 @@ async function updateRecords() {
   }
 }
 
-// Schedule the cron job to run every day at 3:00 AM
+
+async function addPreviousClaim(req, res) {
+
+
+  const customers = await Customer.findAll({
+    attributes: ['RegisterNo']
+  });
+
+  // Map the results to get an array of RegisterNo values
+  const RegisterNoList = customers.map(customer => customer.RegisterNo);
+
+
+  const BASE_URL = `http://${process.env.EXT_API_PORT}:93/api/Quits/List`;
+  const apiKey = 'HABBVtrHLF3YV';
+  // const registerNo = req.body.RegisterNo; // Adjust if neede  
+
+  try {
+
+    for (const registerNo of RegisterNoList) {
+
+    const response = await axios.get(BASE_URL, {
+      params: { SearchTypeId: '2', SearchValue: registerNo },
+      headers: {
+        'APIkey': apiKey
+      }
+    });
+
+    const user  = await Customer.findOne({ where: { registerNo } });
+
+    const responseData = response.data?.quitsLists || [];
+    
+    for (const item of responseData) {
+      const { quitsNo, quitsImages, ...claimData } = item;
+      
+      const existingClaim = await SendClaim.findOne({ where: { quitsNo } });
+
+      if (!existingClaim) {
+        const newClaim = await SendClaim.create({
+          status:claimData.statusName,
+          f1: '',
+          f2: '3',
+          f3: '',
+          f4: claimData.contractNo,
+          f5: claimData.productName,
+          f6: new Date().toISOString(),
+          f7: new Date(claimData.calledDate).toISOString(),
+          f8: new Date(claimData.riskDate).toISOString(),
+          f9:'1',
+          f11:user.PhoneNo,
+          f12:'',
+          RegisterNo: registerNo,
+          quitsNo,
+          productName: claimData.productName,
+          beginDate: new Date(claimData.beginDate).toISOString(),
+          endDate: new Date(claimData.endDate).toISOString(),
+          rate: claimData.rate,
+          f13: claimData.invoiceAmount
+        });
+
+        if (quitsImages && quitsImages.length > 0) {
+          const quitsImagesData = quitsImages.map(image => ({
+            sendClaimId: newClaim.id,
+            quitsType: "other document", // Add appropriate value or field mapping for quitsType
+            f1: image.f1 || ' ',
+            f2: image.f2 || ' ',
+            f3: image.f3 || ' '
+          }));
+
+          await QuitsImages.bulkCreate(quitsImagesData);
+        }
+      }
+    }
+
+  }
+    // const updated = await SendClaim.findOne({ where: { RegisterNo:registerNo } });
+    res.status(200).json({
+      // data: updated,
+      status: 'true',
+      message: 'Send Claim Data Inserted Successfully',
+    });
+  } catch (error) {
+    console.error('Error occurred while fetching data:', error);
+    res.status(500).json({
+      status: 'false',
+      statusCode: 500,
+      message: 'Internal server error'
+    });
+  }
+}
+
+
+
+
+
 cron.schedule('*/10 * * * *', async () => {
   console.log('Starting update process...');
   await updateRecords();
+  await addPreviousClaim();
 });
 
 
   module.exports = {
     
     login,
+    verifyPassword,
+    forgotPassword,
+    addPreviousClaim,
+    storePassword,
     resendOtp,
     otpverify,
     logout,

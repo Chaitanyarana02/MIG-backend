@@ -1,4 +1,4 @@
-const { Customer, User } = require('../models');
+const { User, Customer ,SendClaim ,QuitsImages } = require('../models');
 const { validationResult } = require('express-validator');
 const { getNewUserData  } = require('../Response/CustomerResponse.js');
 const { paginate } = require('../Response/Pagination');
@@ -10,6 +10,7 @@ require('dotenv').config();
 const fs = require('fs');
 const { Op } = require('sequelize');
 const path = require('path');
+const axios = require('axios');
 
 
 AWS.config.update({
@@ -86,9 +87,82 @@ async function store(req, res) {
         const newRegister = await Customer.create(newRegisterData);
         const data = getNewUserData(newRegister);
 
+
+
+        const BASE_URL = `http://${process.env.EXT_API_PORT}:93/api/Quits/List`;
+        const apiKey = 'HABBVtrHLF3YV';
+        const registerNo = RegisterNo; 
+      
+        try {
+          const response = await axios.get(BASE_URL, {
+            params: { SearchTypeId: '2', SearchValue: registerNo },
+            headers: {
+              'APIkey': apiKey
+            }
+          });
+      
+          const user  = await Customer.findOne({ where: { registerNo } });
+      
+          const responseData = response.data?.quitsLists || [];
+          
+          for (const item of responseData) {
+            const { quitsNo, quitsImages, ...claimData } = item;
+            
+            const existingClaim = await SendClaim.findOne({ where: { quitsNo } });
+      
+            if (!existingClaim) {
+              const newClaim = await SendClaim.create({
+                status:claimData.statusName || '',
+                f1: '',
+                f2: '3',
+                f3: '',
+                f4: claimData.contractNo,
+                f5: claimData.productName,
+                f6: new Date().toISOString(),
+                f7: new Date(claimData.calledDate).toISOString(),
+                f8: new Date(claimData.riskDate).toISOString(),
+                f9:'1',
+                f11:user.PhoneNo,
+                f12:'',
+                RegisterNo: registerNo,
+                quitsNo,
+                productName: claimData.productName,
+                beginDate: new Date(claimData.beginDate).toISOString(),
+                endDate: new Date(claimData.endDate).toISOString(),
+                rate: claimData.rate,
+                f13: claimData.invoiceAmount
+              });
+      
+              if (quitsImages && quitsImages.length > 0) {
+                const quitsImagesData = quitsImages.map(image => ({
+                  sendClaimId: newClaim.id,
+                  quitsType: "other document", // Add appropriate value or field mapping for quitsType
+                  f1: image.f1 || ' ',
+                  f2: image.f2 || ' ',
+                  f3: image.f3 || ' '
+                }));
+      
+                await QuitsImages.bulkCreate(quitsImagesData);
+              }
+            }
+          }
+
+
+        }catch (error) {
+                console.error('Error occurred while storing customer:', error);
+                res.status(500).json({
+                    status: 'false',
+                    statusCode: 500,
+                    message: 'Internal server error'
+                });
+            }
+      
+          const updated = await SendClaim.findOne({ where: { RegisterNo:registerNo } });
+      
         // Respond with success message and customer data
         res.status(201).json({
             data: data,
+            previousClaim: updated || '', 
             status: 'true',
             statusCode: 200,
             message: 'Customer registered successfully'
@@ -103,6 +177,85 @@ async function store(req, res) {
         });
     }
 }
+
+
+
+
+async function addPreviousClaim(req, res) {
+  const BASE_URL = `http://${process.env.EXT_API_PORT}:93/api/Quits/List`;
+  const apiKey = 'HABBVtrHLF3YV';
+  const registerNo = req.body.RegisterNo; // Adjust if needed
+
+  try {
+    const response = await axios.get(BASE_URL, {
+      params: { SearchTypeId: '2', SearchValue: registerNo },
+      headers: {
+        'APIkey': apiKey
+      }
+    });
+
+    const user  = await Customer.findOne({ where: { registerNo } });
+
+    const responseData = response.data?.quitsLists || [];
+    
+    for (const item of responseData) {
+      const { quitsNo, quitsImages, ...claimData } = item;
+      
+      const existingClaim = await SendClaim.findOne({ where: { quitsNo } });
+
+      if (!existingClaim) {
+        const newClaim = await SendClaim.create({
+          status:claimData.statusName,
+          f1: '',
+          f2: '3',
+          f3: '',
+          f4: claimData.contractNo,
+          f5: claimData.productName,
+          f6: new Date().toISOString(),
+          f7: new Date(claimData.calledDate).toISOString(),
+          f8: new Date(claimData.riskDate).toISOString(),
+          f9:'1',
+          f11:user.PhoneNo,
+          f12:'',
+          RegisterNo: registerNo,
+          quitsNo,
+          productName: claimData.productName,
+          beginDate: new Date(claimData.beginDate).toISOString(),
+          endDate: new Date(claimData.endDate).toISOString(),
+          rate: claimData.rate,
+          f13: claimData.invoiceAmount
+        });
+
+        if (quitsImages && quitsImages.length > 0) {
+          const quitsImagesData = quitsImages.map(image => ({
+            sendClaimId: newClaim.id,
+            quitsType: "other document", // Add appropriate value or field mapping for quitsType
+            f1: image.f1 || ' ',
+            f2: image.f2 || ' ',
+            f3: image.f3 || ' '
+          }));
+
+          await QuitsImages.bulkCreate(quitsImagesData);
+        }
+      }
+    }
+
+    const updated = await SendClaim.findOne({ where: { RegisterNo:registerNo } });
+
+    res.status(200).json({
+      data: updated,
+      status: 'true',
+    });
+  } catch (error) {
+    console.error('Error occurred while fetching data:', error);
+    res.status(500).json({
+      status: 'false',
+      statusCode: 500,
+      message: 'Internal server error'
+    });
+  }
+}
+
 
 async function saveToLocal(file) {
     const extension = path.extname(file.originalname);
@@ -119,7 +272,6 @@ async function saveToLocal(file) {
     // Return relative path to be stored in database
     return `https://eclaim.mig.mn/api/certificate/${fileName}`;
 }
-
 
 // async function store(req, res) {
 //     try {
@@ -208,6 +360,7 @@ async function saveToLocal(file) {
 //             });
 //         }
 // }
+
 async function uploadToS3(file) {
    const extension = file.originalname.split('.').pop(); // Extract the file extension
     const key = `${file.filename}.${extension}`; // Append the extension to the file name
@@ -315,8 +468,6 @@ async function get_customer_details(req, res) {
       }
 }
 
-
-
 async function storeExcel(req, res) {
     try {
         const currentUser = req.user;
@@ -373,6 +524,7 @@ async function storeExcel(req, res) {
     });
     }
 }
+
 async function edit(req, res) {
     try {
         const currentUser = req.user;

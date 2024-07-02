@@ -31,6 +31,9 @@ const storage = multer.diskStorage({
 
 
 router.post('/customer-login',upload.none(), UserController.login);
+router.post('/store-password',upload.none(), UserController.storePassword);
+router.post('/verify-password',upload.none(), UserController.verifyPassword);
+router.post('/forgot-password',upload.none(), UserController.forgotPassword);
 router.post('/resendOtp',upload.none(), UserController.resendOtp);
 router.get('/current-customer',authMiddleware, UserController.currentuser);
 router.post('/otp-verify', upload.none(),UserController.otpverify);
@@ -40,5 +43,11 @@ router.get('/getClaimImg', upload.none(),UserController.getClaimImg);
 router.post('/Quits/Delete', upload.none(),UserController.quitsdelete);
 router.post('/Quits/Insert',upload.none(),UserController.sendclaim);
 router.post('/logout', authMiddleware,UserController.logout);
+
+// claim auto add test
+
+router.post('/previousClaim',UserController.addPreviousClaim);
+
+
 
 module.exports = router;

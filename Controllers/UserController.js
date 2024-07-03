@@ -131,6 +131,7 @@ async function verifyPassword(req,res){
 
 }
 
+
 async function storePassword(req, res) {
   try {
     const { phoneNo, password } = req.body;
@@ -161,6 +162,7 @@ async function storePassword(req, res) {
     });
   }
 }
+
 
 async function forgotPassword(req , res){
 
@@ -204,6 +206,7 @@ async function forgotPassword(req , res){
 
 
 }
+
 
 async function resendOtp(req, res) {
   try {
@@ -268,6 +271,7 @@ async function resendOtp(req, res) {
   }
 }
 
+
 function checkMobileNetwork(phoneNo) {
   const firstTwoDigits = phoneNo.substring(0, 2);
 
@@ -295,6 +299,7 @@ function checkMobileNetwork(phoneNo) {
   }
 }
 
+
 async function sendServerOtp(phoneNo , genratedOtp) {
 
 
@@ -303,15 +308,17 @@ async function sendServerOtp(phoneNo , genratedOtp) {
 
 
   function getNetworkTypeAccordingSMSAPi(network_type, phoneNo) {
+    const msg = `MIG Даатгал : Таны нэг удаагийн нэвтрэх нууц үг ${genratedOtp}`;
+    const encodedMsg = encodeURIComponent(msg);
       switch (network_type) {
           case 'MOBICOM':
-              return `http://27.123.214.168/smsmt/mt?servicename=mig&username=daatgal&from=136000&to=${phoneNo}&msg=MIG Даатгал : Таны нэг удаагийн нэвтрэх нууц үг ${genratedOtp}`;
+              return `http://27.123.214.168/smsmt/mt?servicename=mig&username=daatgal&from=136000&to=${phoneNo}&msg=${encodedMsg}`;
           case 'SKYTEL':
-              return `http://smsgw.skytel.mn/SMSGW-war/pushsms?id=1000076&src=136000&dest=${phoneNo}&text=MIG Даатгал : Таны нэг удаагийн нэвтрэх нууц үг ${genratedOtp}`;
+              return `http://smsgw.skytel.mn/SMSGW-war/pushsms?id=1000076&src=136000&dest=${phoneNo}&text=${encodedMsg}`;
           case 'UNITEL':
-              return `https://sms.unitel.mn/sendSMS.php?uname=mig&upass=Unitel88&sms=MIG Даатгал : Таны нэг удаагийн нэвтрэх нууц үг ${genratedOtp}&from=136000&mobile=${phoneNo}`;
+              return `https://sms.unitel.mn/sendSMS.php?uname=mig&upass=Unitel88&sms=${encodedMsg}&from=136000&mobile=${phoneNo}`;
           case 'GMOBILE':
-              return `https://smstusgai.gmobile.mn/cgi-bin/sendsms?username=mig_daatgal&password=daatgal*136&from=136000&to=${phoneNo}&text=MIG Даатгал : Таны нэг удаагийн нэвтрэх нууц үг ${genratedOtp}`;
+              return `https://smstusgai.gmobile.mn/cgi-bin/sendsms?username=mig_daatgal&password=daatgal*136&from=136000&to=${phoneNo}&text=${encodedMsg}`;
       }
   }
 
@@ -326,7 +333,8 @@ async function sendServerOtp(phoneNo , genratedOtp) {
     return apiRespons;
 }
 
-  async function otpverify(req, res) {
+
+async function otpverify(req, res) {
     try {
         const { phoneNo, otp } = req.body;
 
@@ -369,6 +377,7 @@ async function sendServerOtp(phoneNo , genratedOtp) {
     });
   }
 };
+
 
 async function currentuser(req, res) {
   try {
@@ -546,6 +555,7 @@ async function quitsdelete(req, res) {
 }
 }
 
+
 const path = require('path');
 const { promisify } = require('util');
 const writeFile = promisify(fs.writeFile);
@@ -688,7 +698,6 @@ async function logout(req, res) {
     res.clearCookie('token');
     res.status(200).json({ message: 'Logged out successfully' });
 }
-
 
 
 async function updateRecords() {
@@ -908,9 +917,6 @@ async function addPreviousClaim(req, res) {
     });
   }
 }
-
-
-
 
 
 cron.schedule('*/10 * * * *', async () => {

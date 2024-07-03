@@ -451,7 +451,11 @@ async function quitsList(req, res) {
       updatedData = await SendClaim.findAll({
         where: {
           f2: SearchTypeId,
-        }
+        },
+        order: [
+          ['beginDate', 'DESC']
+        ]
+        
       });
       user = await Customer.findAll();
   
@@ -473,8 +477,11 @@ async function quitsList(req, res) {
             where: {
               f2: SearchTypeId,
               RegisterNo: SearchValue
-            }
-          });
+            },
+            order: [
+              ['beginDate', 'DESC']
+            ]
+          }); 
           user = await Customer.findOne({ where: { RegisterNo:SearchValue } });
     }
     res.json({

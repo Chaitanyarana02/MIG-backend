@@ -270,7 +270,7 @@ async function saveToLocal(file) {
     await fs.promises.rename(file.path, filePath);
 
     // Return relative path to be stored in database
-    return `https://eclaim.mig.mn/api/certificate/${fileName}`;
+    return `${process.env.DOMAIN}/api/certificate/${fileName}`;
 }
 
 // async function store(req, res) {
@@ -416,7 +416,7 @@ async function get(req, res) {
             });
         }
         const customerdata = customers.map(customer => getNewUserData(customer));
-        const paginationData = paginate(customerdata, count, parseInt(page), perPage, 'https://eclaim.mig.mn/api/get-customers');
+        const paginationData = paginate(customerdata, count, parseInt(page), perPage, `${process.env.DOMAIN}/api/get-customers`);
 
         res.status(200).json(paginationData);
     } catch (error) {

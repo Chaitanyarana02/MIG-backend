@@ -80,7 +80,7 @@ async function getadmins(req, res) {
         }
         const mappedAdmins = admins.map(admin => getNewUserData(admin));
 
-        const paginationData = paginate(mappedAdmins, count, parseInt(page), perPage, 'https://eclaim.mig.mn/api/get-admins');
+        const paginationData = paginate(mappedAdmins, count, parseInt(page), perPage, `${process.env.DOMAIN}/api/get-admins`);
         
 
         res.status(200).json(paginationData);
@@ -153,7 +153,7 @@ async function getadmins(req, res) {
 //         const mappedData = combinedData.map(item => getNewUserData(item));
 
 //         // Apply pagination
-//         const paginationData = paginate(mappedData, totalCount, parseInt(page), perPage, 'https://eclaim.mig.mn/api/get-admins');
+//         const paginationData = paginate(mappedData, totalCount, parseInt(page), perPage, `${process.env.DOMAIN}/api/get-admins`);
 
 //         res.status(200).json(paginationData);
 //     } catch (error) {
@@ -245,7 +245,7 @@ async function getAdminsAndUsers(req, res) {
         const mappedData = combinedData.map(item => getNewUserData(item));
 
         // Apply pagination
-        const paginationData = paginate(mappedData, totalCount, parseInt(page), perPage, 'https://eclaim.mig.mn/api/get-admins');
+        const paginationData = paginate(mappedData, totalCount, parseInt(page), perPage, `${process.env.DOMAIN}/api/get-admins`);
 
         res.status(200).json(paginationData);
     } catch (error) {

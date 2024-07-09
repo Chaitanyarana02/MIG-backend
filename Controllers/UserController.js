@@ -21,7 +21,7 @@ async function login(req, res) {
         return res.status(400).json({ errors: errors.array() });
       }
         const { phoneNo } = req.body;
-        const user = await User.findOne({ where: { phoneNo } });
+        const user = await User.scope('withPassword').findOne({ where: { phoneNo } });
     
         if (!user) {
           return res.status(401).json({
@@ -96,7 +96,7 @@ async function verifyPassword(req,res){
     const { phoneNo, password } = req.body;
 
     // Find the user by phone number
-    const user = await User.findOne({ where: { phoneNo } });
+    const user = await User.scope('withPassword').findOne({ where: { phoneNo } });
     if (!user) {
       return res.status(404).json({ status: 'false', statusCode: 404, message: 'User not found' });
     }
@@ -453,7 +453,7 @@ async function quitsList(req, res) {
           f2: SearchTypeId,
         },
         order: [
-          ['beginDate', 'DESC']
+          ['beginDate', 'ASC']
         ]
         
       });
@@ -479,7 +479,7 @@ async function quitsList(req, res) {
               RegisterNo: SearchValue
             },
             order: [
-              ['beginDate', 'DESC']
+              ['beginDate', 'ASC']
             ]
           }); 
           user = await Customer.findOne({ where: { RegisterNo:SearchValue } });
@@ -658,7 +658,7 @@ async function sendclaim(req, res) {
         const filePath = path.join(uploadDir, fileName); // Construct full file path
         await writeFile(filePath, base64Data, 'base64');
 
-        const imageUrl = `https://eclaim.mig.mn/api/sendclaim/${fileName}`;
+        const imageUrl = `${process.env.DOMAIN}/api/sendclaim/${fileName}`;
         console.log('quitsType:', quitsType);
         // Store in database using the Sequelize model
               const newQuitsImage = await QuitsImages.create({

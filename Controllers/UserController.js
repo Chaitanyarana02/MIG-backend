@@ -621,6 +621,7 @@ async function sendclaim(req, res) {
          f13,
          RegisterNo:RegisterNo,
          quitsNo:quitsNo,
+         beginDate:f6
        });
      }else{
        res.status(500).json({

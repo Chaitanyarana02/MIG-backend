@@ -453,7 +453,7 @@ async function quitsList(req, res) {
           f2: SearchTypeId,
         },
         order: [
-          ['beginDate', 'ASC']
+          ['beginDate', 'DESC']
         ]
         
       });
@@ -479,7 +479,7 @@ async function quitsList(req, res) {
               RegisterNo: SearchValue
             },
             order: [
-              ['beginDate', 'ASC']
+              ['beginDate', 'DESC']
             ]
           }); 
           user = await Customer.findOne({ where: { RegisterNo:SearchValue } });

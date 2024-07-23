@@ -94,78 +94,6 @@ async function getadmins(req, res) {
     }
 }
 
-// async function getAdminsAndUsers(req, res) {
-//     try {
-//         const currentUser = req.user;
-//         if (!currentUser || currentUser.userType !== '2') {
-//             return res.status(401).json({
-//                 status: 'false',
-//                 statusCode: 401,
-//                 message: 'You don`t have permission to access'
-//             });
-//         }
-
-//         const page = req.query.page || 1;
-//         const perPage = req.query.perPage ? parseInt(req.query.perPage) : 15;
-//         const offset = (page - 1) * perPage;
-
-//         let whereCondition = {};
-//         if (req.query.PhoneNo || req.query.Name || req.query.LastName || req.query.RegisterNumber) {
-//             whereCondition = {
-//                 ...(req.query.Name && { Name: { [Op.like]: `%${req.query.Name}%` } }),
-//                 ...(req.query.LastName && { LastName: { [Op.like]: `%${req.query.LastName}%` } }),
-//                 ...(req.query.RegisterNumber && { RegisterNumber: { [Op.like]: `%${req.query.RegisterNumber}%` } }),
-//                 ...(req.query.PhoneNo && { PhoneNo: { [Op.like]: `%${req.query.PhoneNo}%` } }),
-//             };
-//         }
-
-//         const order = req.query.order === 'desc' ? 'DESC' : 'ASC';
-
-//         // Fetch admins
-//         const { count: adminCount, rows: admins } = await Admin.findAndCountAll({
-//             where: whereCondition,
-//             order: [['createdAt', order]],
-//             limit: perPage,
-//             offset: offset
-//         });
-
-//         // Fetch users
-//         const { count: userCount, rows: users } = await Customer.findAndCountAll({
-//             where: whereCondition,
-//             order: [['createdAt', order]],
-//             limit: perPage,
-//             offset: offset
-//         });
-
-//         // Merge admins and users
-//         const combinedData = [ ...users];
-//         const totalCount = adminCount + userCount;
-
-//         if (combinedData.length === 0) {
-//             return res.status(404).json({
-//                 status: 'false',
-//                 statusCode: 404,
-//                 message: 'No admins or users available'
-//             });
-//         }
-
-//         // Map data
-//         const mappedData = combinedData.map(item => getNewUserData(item));
-
-//         // Apply pagination
-//         const paginationData = paginate(mappedData, totalCount, parseInt(page), perPage, `${process.env.DOMAIN}/api/get-admins`);
-
-//         res.status(200).json(paginationData);
-//     } catch (error) {
-//         console.error('message', error);
-//         res.status(500).json({
-//             status: 'false',
-//             statusCode: 500,
-//             message: 'Internal server error'
-//         });
-//     }
-// }
-
 async function getAdminsAndUsers(req, res) {
     try {
         const currentUser = req.user;
@@ -439,9 +367,46 @@ async function getClaimImg(req, res) {
   };
 
 
+
+  async function deleteAdmin(req,res) {
+
+    const { phoneNo } = req.body;
+    if (!phoneNo) {
+        return res.status(400).json({ message: 'Phone number is required' });
+      }
+    try {
+        const admin = await Admin.findOne({ where: { phoneNo: {
+                                                                [Op.not]: '99009900'
+                                                              } 
+                                                  }       });
+        if (!admin) {
+        return res.status(404).json({ message: 'This admin cannot be deleted ' });
+        }
+
+        const user = await User.findOne({ where: { phoneNo , userType: {
+            [Op.notIn]: ['0', '2']
+          } } });
+
+          if (!user) {
+            return res.status(404).json({ message: 'You don\'t have permission' });
+          }
+
+        await admin.destroy();
+        await user.destroy();
+        return res.status(200).json({ message: 'Admin deleted successfully' });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: 'An error occurred while trying to delete the admin' });
+    }
+
+
+  }
+
+
 module.exports = { 
     store,
     getadmins,
+    deleteAdmin,
     getClaimImg,
     getImg,
     getclaimsImg,

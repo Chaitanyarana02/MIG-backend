@@ -1094,7 +1094,7 @@ async function addPreviousClaim(req, res) {
 }
 
 
-cron.schedule('* * * * *', async () => {
+cron.schedule('*/10 * * * *', async () => {
   console.log('Starting update process...');
   await updateRecords();
   await addPreviousClaim();

@@ -9,6 +9,7 @@ const router = express.Router();
 
 router.post('/admin',upload.none(),authMiddleware,AdminValidation, AdminController.store);
 router.post('/admin-edit-profile',upload.none(),authMiddleware, AdminController.editadmin);
+router.post('/admin-delete-profile',AdminController.deleteAdmin);
 router.get('/get-admins', authMiddleware,AdminController.getAdminsAndUsers);
 router.get('/getClaimImgAdmin', upload.none(),AdminController.getClaimImg);
 router.get('/current-admin', authMiddleware,AdminController.currentadmin);

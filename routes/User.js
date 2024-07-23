@@ -42,6 +42,7 @@ router.get('/Quits/List', upload.none(),UserController.quitsList);
 router.get('/getClaimImg', upload.none(),UserController.getClaimImg);
 router.post('/Quits/Delete', upload.none(),UserController.quitsdelete);
 router.post('/Quits/Insert',upload.none(),UserController.sendclaim);
+router.post('/Quits/Update',upload.none(),UserController.updateclaim);
 router.post('/logout', authMiddleware,UserController.logout);
 
 // claim auto add test

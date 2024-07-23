@@ -100,23 +100,41 @@ async function store(req, res) {
               'APIkey': apiKey
             }
           });
+
+          const innerBaseUrl = `http://${process.env.EXT_API_PORT}:93/api/Guarantee/List`;
+          const contractRespons =    await axios.get(innerBaseUrl, {
+              params: { RegisterNo: registerNo},
+              headers: {
+                'APIkey': apiKey
+              }
+            });
+
+          let data = contractRespons.data;
+
+          const ContractGet = data.filter(
+              (contract) =>
+                contract.ProductID == 1807060001 
+            )
+
+
       
           const user  = await Customer.findOne({ where: { registerNo } });
       
           const responseData = response.data?.quitsLists || [];
-          
+         
+    
           for (const item of responseData) {
             const { quitsNo, quitsImages, ...claimData } = item;
             
             const existingClaim = await SendClaim.findOne({ where: { quitsNo } });
-      
-            if (!existingClaim) {
+            if (!existingClaim && claimData.statusName && claimData.statusName !== " ") {
               const newClaim = await SendClaim.create({
                 status:claimData.statusName || '',
+                riskDesc:claimData.riskDesc,
                 f1: '',
                 f2: '3',
-                f3: '',
-                f4: claimData.contractNo,
+                f3: ContractGet[0].ContractId,
+                f4: ContractGet[0].ContractDetailId,
                 f5: claimData.productName,
                 f6: new Date().toISOString(),
                 f7: new Date(claimData.calledDate).toISOString(),
@@ -145,8 +163,9 @@ async function store(req, res) {
                 await QuitsImages.bulkCreate(quitsImagesData);
               }
             }
-          }
 
+
+          }
 
         }catch (error) {
                 console.error('Error occurred while storing customer:', error);
@@ -197,19 +216,36 @@ async function addPreviousClaim(req, res) {
     const user  = await Customer.findOne({ where: { registerNo } });
 
     const responseData = response.data?.quitsLists || [];
+
+
+    const innerBaseUrl = `http://${process.env.EXT_API_PORT}:93/api/Guarantee/List`;
+    const contractRespons =    await axios.get(innerBaseUrl, {
+        params: { RegisterNo: registerNo},
+        headers: {
+          'APIkey': apiKey
+        }
+      });
+
+    let data = contractRespons.data;
+
+    const ContractGet = data.filter(
+        (contract) =>
+          contract.ProductID == 1807060001 
+      )
     
     for (const item of responseData) {
       const { quitsNo, quitsImages, ...claimData } = item;
       
       const existingClaim = await SendClaim.findOne({ where: { quitsNo } });
 
-      if (!existingClaim) {
+      if (!existingClaim && claimData.statusName && claimData.statusName !== " " ) {
         const newClaim = await SendClaim.create({
           status:claimData.statusName,
+          riskDesc:claimData.riskDesc,
           f1: '',
           f2: '3',
-          f3: '',
-          f4: claimData.contractNo,
+          f3: ContractGet[0].ContractNo,
+          f4: ContractGet[0].ContractDetailId,  
           f5: claimData.productName,
           f6: new Date().toISOString(),
           f7: new Date(claimData.calledDate).toISOString(),

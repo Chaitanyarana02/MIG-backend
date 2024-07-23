@@ -2,6 +2,7 @@ const getClaim = (claim) => ({
     id: claim.id,
     RegisterNo:claim.RegisterNo,
     quitsNo:claim.quitsNo,
+    returenDiscription:claim.riskDesc,
     beginDate:claim.beginDate || claim.f7,
     endDate:claim.endDate || claim.f8,
     rate: claim.rate || '' ,

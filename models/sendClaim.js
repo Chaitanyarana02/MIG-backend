@@ -95,6 +95,10 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: 'материал илгээсэн',
     },
+    riskDesc: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     productName: {
       type: DataTypes.STRING,
       allowNull: true,

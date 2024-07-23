@@ -383,9 +383,10 @@ async function getClaimImg(req, res) {
         return res.status(404).json({ message: 'This admin cannot be deleted ' });
         }
 
-        const user = await User.findOne({ where: { phoneNo , userType: {
-            [Op.notIn]: ['0', '2']
-          } } });
+        const user = await User.findOne({ where: { phoneNo: {
+            [Op.not]: '99009900'
+          } 
+}       });
 
           if (!user) {
             return res.status(404).json({ message: 'You don\'t have permission' });

@@ -99,6 +99,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true
     },
+    returnDescription: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     productName: {
       type: DataTypes.STRING,
       allowNull: true,

@@ -1042,6 +1042,7 @@ async function addPreviousClaim(req, res) {
         const newClaim = await SendClaim.create({
           status:claimData.statusName,
           riskDesc:claimData.riskDesc,
+          returnDescription:claimData.returnDescription,
           f1: '',
           f2: '3',
           f3: ContractGet[0].ContractId,

@@ -108,7 +108,7 @@ async function store(req, res) {
 
     try {
 
-      if (response.length > 0 && contractRespons .length > 0) {
+      if (response && contractRespons.data) {
 
         let data = contractRespons.data;
 

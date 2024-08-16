@@ -1026,27 +1026,41 @@ async function addPreviousClaim(req, res) {
           'APIkey': 'HABBVtrHLF3YV'
         }
       });
+      let ContractGet =null;
+      let data = contractRespons.data;
+      if(data){
+        ContractGet  = data.filter(
+          (contract) =>
+            contract.ProductID == 1807060001 
+        )
+      }  
 
-    let data = contractRespons.data;
-
-    const ContractGet = data.filter(
-        (contract) =>
-          contract.ProductID == 1807060001 
-      )
-    
     for (const item of responseData) {
       const { quitsNo, quitsImages, ...claimData } = item;
       
-      const existingClaim = await SendClaim.findOne({ where: { quitsNo } });
-      if (!existingClaim && claimData.statusName && claimData.statusName !== " " ) {
+      const existingClaim = await SendClaim.findOne({ where: { quitsNo:item.quitsNo } });
+      const existingClaimAll = await SendClaim.findAll({ where: { RegisterNo:registerNo } });
+
+      const claimsNotInResponseData = existingClaimAll.filter(existingClaim => 
+          !responseData.some(data => data.quitsNo === existingClaim.dataValues.quitsNo)
+      );
+
+      for (const claim of claimsNotInResponseData) {
+        await QuitsImages.destroy({ where: { sendClaimId: claim.dataValues.id } });
+        await SendClaim.destroy({ where: { id: claim.dataValues.id } });
+        console.log("deleted records" , claim.dataValues.id);
+       } 
+        
+      
+      if (!existingClaim && claimData && claimData.statusName && claimData.statusName !== " " ) {
         const newClaim = await SendClaim.create({
           status:claimData.statusName,
           riskDesc:claimData.riskDesc,
           returnDescription:claimData.returnDescription,
           f1: '',
           f2: '3',
-          f3: ContractGet[0].ContractId,
-          f4: ContractGet[0].ContractDetailId,
+          f3: ContractGet[0].ContractId || '',
+          f4: ContractGet[0].ContractDetailId || '',
           f5: claimData.productName,
           f6: new Date().toISOString(),
           f7: new Date(claimData.calledDate).toISOString(),

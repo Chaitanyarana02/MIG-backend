@@ -1039,17 +1039,22 @@ async function addPreviousClaim(req, res) {
       const { quitsNo, quitsImages, ...claimData } = item;
       
       const existingClaim = await SendClaim.findOne({ where: { quitsNo:item.quitsNo } });
-      const existingClaimAll = await SendClaim.findAll({ where: { RegisterNo:registerNo } });
+      
+      for (const useRegNoForDeletingSendClaim of RegisterNoList) {
+          const existingClaimAll = await SendClaim.findAll({ where: { RegisterNo: useRegNoForDeletingSendClaim } });
+          
+          const claimsNotInResponseData = existingClaimAll.filter(existingClaim => 
+              !responseData.some(data => data.quitsNo === existingClaim.dataValues.quitsNo)
+          );
+          
+          for (const claim of claimsNotInResponseData) {
+              await QuitsImages.destroy({ where: { sendClaimId: claim.dataValues.id } });
+              await SendClaim.destroy({ where: { id: claim.dataValues.id } });
+              console.log("deleted records", claim.dataValues.id);
+          }
+       }
+    
 
-      const claimsNotInResponseData = existingClaimAll.filter(existingClaim => 
-          !responseData.some(data => data.quitsNo === existingClaim.dataValues.quitsNo)
-      );
-
-      for (const claim of claimsNotInResponseData) {
-        await QuitsImages.destroy({ where: { sendClaimId: claim.dataValues.id } });
-        await SendClaim.destroy({ where: { id: claim.dataValues.id } });
-        console.log("deleted records" , claim.dataValues.id);
-       } 
         
       
       if (!existingClaim && claimData && claimData.statusName && claimData.statusName !== " " ) {
@@ -1109,7 +1114,7 @@ async function addPreviousClaim(req, res) {
 }
 
 
-cron.schedule('*/10 * * * *', async () => {
+cron.schedule('* * * * *', async () => {
   console.log('Starting update process...');
   await updateRecords();
   await addPreviousClaim();

@@ -963,6 +963,153 @@ async function updateRecords() {
           });
 
           console.log(`Record updated: ${apiItem.quitsNo}`);
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
+          console.log("#");
           return {
             ...apiItem,
             responseData: updatedRecord,
@@ -991,7 +1138,7 @@ async function updateRecords() {
 
 async function addPreviousClaim(req, res) {
 
-
+  // get all user from customer table
   const customers = await Customer.findAll({
     attributes: ['RegisterNo']
   });
@@ -1013,7 +1160,7 @@ async function addPreviousClaim(req, res) {
       headers: {
         'APIkey': apiKey
       }
-    });
+    }); 
 
     const user  = await Customer.findOne({ where: { registerNo } });
 
@@ -1027,6 +1174,7 @@ async function addPreviousClaim(req, res) {
         }
       });
       let ContractGet =null;
+      //contract data that inner filter that data which product id which match 
       let data = contractRespons.data;
       if(data){
         ContractGet  = data.filter(
@@ -1048,7 +1196,7 @@ async function addPreviousClaim(req, res) {
           );
           
           for (const claim of claimsNotInResponseData) {
-              // await QuitsImages.destroy({ where: { sendClaimId: claim.dataValues.id } });
+              await QuitsImages.destroy({ where: { sendClaimId: claim.dataValues.id } });
               await SendClaim.destroy({ where: { id: claim.dataValues.id } });
               console.log("deleted records", claim.dataValues.id);
           }
@@ -1114,7 +1262,7 @@ async function addPreviousClaim(req, res) {
 }
 
 
-cron.schedule('*/3 * * * *', async () => {
+cron.schedule('*/10 * * * *', async () => {
   console.log('Starting update process...');
   await updateRecords();
   await addPreviousClaim();

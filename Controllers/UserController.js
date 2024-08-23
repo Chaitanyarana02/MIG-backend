@@ -810,9 +810,9 @@ async function updateclaim(req, res) {
         const imageUrl = `${process.env.DOMAIN}/api/sendclaim/${fileName}`;
         console.log('quitsType:', quitsType);
         // Store in database using the Sequelize model
-        await QuitsImages.destroy({
-          where: { sendClaimId: f1 }
-           });
+        // await QuitsImages.destroy({
+        //   where: { sendClaimId: f1 }
+        //    });
               const newQuitsImage = await QuitsImages.create({
                   sendClaimId: f1,
                   quitsType: quitsType , // Adjust as per your actual logic

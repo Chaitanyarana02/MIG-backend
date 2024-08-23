@@ -1051,7 +1051,7 @@ async function addPreviousClaim(req, res) {
           for (const claim of claimsNotInResponseData) {
               await QuitsImages.destroy({ where: { sendClaimId: claim.dataValues.id } });
               await SendClaim.destroy({ where: { id: claim.dataValues.id } });
-              console.log("deleted records", claim.dataValues.id);
+              console.log("deleted records", claim.dataValues.quitsNo);
           }
        }
     

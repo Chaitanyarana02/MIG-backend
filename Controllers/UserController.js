@@ -810,9 +810,9 @@ async function updateclaim(req, res) {
         const imageUrl = `${process.env.DOMAIN}/api/sendclaim/${fileName}`;
         console.log('quitsType:', quitsType);
         // Store in database using the Sequelize model
-        // await QuitsImages.destroy({
-        //   where: { sendClaimId: f1 }
-        //    });
+        await QuitsImages.destroy({
+          where: { sendClaimId: f1 }
+           });
               const newQuitsImage = await QuitsImages.create({
                   sendClaimId: f1,
                   quitsType: quitsType , // Adjust as per your actual logic
@@ -955,12 +955,15 @@ async function updateRecords() {
               quitsNo: matchedResponse.quitsNo
             }
           });
-
-          const updatedRecord = await SendClaim.findOne({
-            where: {
-              quitsNo: matchedResponse.quitsNo
-            }
-          });
+          let updatedRecord ;
+          if(matchedResponse.length > 0){
+            updatedRecord = await SendClaim.findOne({
+              where: {
+                quitsNo: matchedResponse.quitsNo
+              }
+            });
+          }
+         
 
           console.log(`Record updated: ${apiItem.quitsNo}`);
           return {
@@ -971,8 +974,6 @@ async function updateRecords() {
         } catch (error) {
           console.error('Error updating record:', error);
           return {
-            ...apiItem,
-            responseData: matchedResponse,
             updateStatus: 'update_failed'
           };
         }
@@ -991,18 +992,18 @@ async function updateRecords() {
 
 async function addPreviousClaim(req, res) {
 
-  // get all user from customer table
+
   const customers = await Customer.findAll({
     attributes: ['RegisterNo']
   });
 
-  // Map the results to get an array of RegisterNo values
+
   const RegisterNoList = customers.map(customer => customer.RegisterNo);
 
 
   const BASE_URL = `http://${process.env.EXT_API_PORT}:93/api/Quits/List`;
   const apiKey = 'HABBVtrHLF3YV';
-  // const registerNo = req.body.RegisterNo; // Adjust if neede  
+
 
   try {
 
@@ -1013,7 +1014,7 @@ async function addPreviousClaim(req, res) {
       headers: {
         'APIkey': apiKey
       }
-    }); 
+    });
 
     const user  = await Customer.findOne({ where: { registerNo } });
 
@@ -1027,7 +1028,6 @@ async function addPreviousClaim(req, res) {
         }
       });
       let ContractGet =null;
-      //contract data that inner filter that data which product id which match 
       let data = contractRespons.data;
       if(data){
         ContractGet  = data.filter(
@@ -1041,19 +1041,19 @@ async function addPreviousClaim(req, res) {
       
       const existingClaim = await SendClaim.findOne({ where: { quitsNo:item.quitsNo } });
       
-      for (const useRegNoForDeletingSendClaim of RegisterNoList) {
-          const existingClaimAll = await SendClaim.findAll({ where: { RegisterNo: useRegNoForDeletingSendClaim } });
+      // for (const useRegNoForDeletingSendClaim of RegisterNoList) {
+      //     const existingClaimAll = await SendClaim.findAll({ where: { RegisterNo: useRegNoForDeletingSendClaim } });
           
-          const claimsNotInResponseData = existingClaimAll.filter(existingClaim => 
-              !responseData.some(data => data.quitsNo === existingClaim.dataValues.quitsNo)
-          );
+      //     const claimsNotInResponseData = existingClaimAll.filter(existingClaim => 
+      //         !responseData.some(data => data.quitsNo === existingClaim.dataValues.quitsNo)
+      //     );
           
-          for (const claim of claimsNotInResponseData) {
-              await QuitsImages.destroy({ where: { sendClaimId: claim.dataValues.id } });
-              await SendClaim.destroy({ where: { id: claim.dataValues.id } });
-              console.log("deleted records", claim.dataValues.quitsNo);
-          }
-       }
+      //     for (const claim of claimsNotInResponseData) {
+      //         await QuitsImages.destroy({ where: { sendClaimId: claim.dataValues.id } });
+      //         await SendClaim.destroy({ where: { id: claim.dataValues.id } });
+      //         console.log("deleted records", claim.dataValues.id);
+      //     }
+      //  }
     
 
         
@@ -1098,14 +1098,17 @@ async function addPreviousClaim(req, res) {
     }
 
   }
+  
     // const updated = await SendClaim.findOne({ where: { RegisterNo:registerNo } });
     res.status(200).json({
       // data: updated,
-      status: 'true',
+      status: true,
       message: 'Send Claim Data Inserted Successfully',
     });
+
+
   } catch (error) {
-    console.error('Error occurred while fetching data:', error);
+ 
     res.status(500).json({
       status: 'false',
       statusCode: 500,
@@ -1115,10 +1118,64 @@ async function addPreviousClaim(req, res) {
 }
 
 
-cron.schedule('*/10 * * * *', async () => {
+async function deleteUnsuedRecord() {
+
+    const customers = await Customer.findAll({
+      attributes: ['RegisterNo']
+    });
+    const RegisterNoList = customers.map(customer => customer.RegisterNo);
+
+    for(const cust_Rrg_No of RegisterNoList){
+     
+     
+      const BASE_URL = `http://${process.env.EXT_API_PORT}:93/api/Quits/List`;
+      const apiKey = 'HABBVtrHLF3YV';
+      const respons = await axios.get(BASE_URL, {
+        params: { SearchTypeId: '2', SearchValue: cust_Rrg_No },
+        headers: {
+          'APIkey': apiKey
+        }
+      });
+
+      const verifyClaim_Client_Claim = respons.data?.quitsLists || [];
+      const existingClaimAll = await SendClaim.findAll({ where: { RegisterNo: cust_Rrg_No } });
+
+       // for(const verifyEachClaim of verifyClaim_Client_Claim){
+      //   //console.log(verifyEachClaim.quitsNo);
+      //   //you are achive all the claim from api clint thier 
+      //   //this claim is client side verify claims get 
+      // }
+      // for(const claimes of existingClaimAll){
+      //   // console.log(claimes.quitsNo);
+      //   //you are achive all the claim which thier user
+      //   //this claim all database inner store 
+      // }
+
+      const clientClaimNumbers = new Set(verifyClaim_Client_Claim.map(claim => claim.quitsNo));
+      let anyClaimDeleted = false; // Flag to check if any claim was deleted
+      for (const claim of existingClaimAll) {
+          if (!clientClaimNumbers.has(claim.quitsNo)) {
+              await SendClaim.destroy({ where: { quitsNo: claim.quitsNo, RegisterNo: cust_Rrg_No } });
+              console.log(`Deleted claim with quitsNo: ${claim.quitsNo}`);
+              anyClaimDeleted = true;
+          } else {
+              console.log(`Claim with quitsNo: ${claim.quitsNo} is up-to-date.`);
+          }
+      }
+      if (!anyClaimDeleted) {
+          console.log(`All claims for RegisterNo: ${cust_Rrg_No} are verified and up-to-date.`);
+      }
+
+    }
+
+}
+
+
+cron.schedule('* * * * *', async () => {
   console.log('Starting update process...');
-  await updateRecords();
-  await addPreviousClaim();
+   await updateRecords();
+   await addPreviousClaim();
+   await deleteUnsuedRecord();
 });
 
 

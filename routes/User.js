@@ -27,9 +27,6 @@ const storage = multer.diskStorage({
       files: 1000                     // limit the number of file fields
     }
   });
-
-
-
 router.post('/customer-login',upload.none(), UserController.login);
 router.post('/store-password',upload.none(), UserController.storePassword);
 router.post('/verify-password',upload.none(), UserController.verifyPassword);
@@ -42,12 +39,15 @@ router.get('/Quits/List', upload.none(),UserController.quitsList);
 router.get('/getClaimImg', upload.none(),UserController.getClaimImg);
 router.post('/Quits/Delete', upload.none(),UserController.quitsdelete);
 router.post('/Quits/Insert',upload.none(),UserController.sendclaim);
+router.post('/Quits/InsertWithQuestionImage',upload.none(),UserController.sendclaimWithPassingQuestionImages);
 router.post('/Quits/Update',upload.none(),UserController.updateclaim);
+router.post('/Quits/updateclaimWithPassingQuestionImages',upload.none(),UserController.updateclaim);
 router.post('/logout', authMiddleware,UserController.logout);
-
 // claim auto add test
 
 router.post('/previousClaim',UserController.addPreviousClaim);
+
+
 
 
 

@@ -21,5 +21,9 @@ app.use('/api', Customer);
 app.use('/api', UserRoutes);
 app.use('/api', AdminRoutes);
 
+app.use((req, res, next) => {
+    res.status(404).send('404 Not Found');
+  });
+
 
 module.exports = app;

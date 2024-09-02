@@ -32,4 +32,6 @@ router.post('/customers-edit-profile',upload.fields([
     { name: 'DrivingLinceseback', maxCount: 1 }]), authMiddleware,CustomerController.edit);
 router.post('/customers-excel-upload', upload.single('excelFile'),authMiddleware,CustomerController.storeExcel);
 
+
+
 module.exports = router;

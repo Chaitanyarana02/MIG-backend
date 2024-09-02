@@ -16,4 +16,8 @@ router.get('/current-admin', authMiddleware,AdminController.currentadmin);
 router.get('/show-admin/:id', authMiddleware,AdminController.showadmin);
 router.get('/certificate/:name',AdminController.getImg);
 router.get('/sendclaim/:name',AdminController.getclaimsImg);
+
+
 module.exports = router;
+
+
